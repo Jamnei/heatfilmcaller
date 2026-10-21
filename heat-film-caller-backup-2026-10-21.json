@@ -1,0 +1,1541 @@
+{
+ "roster": [
+  {
+   "name": "Keane Marshall",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Ariel Tsaiger",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "DJ Roberts",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Jimmy Zaborniak",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Joseph Thompson",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Enrique Garcia",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Faisal Shawwa",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Michael Adarkwah Nti",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Isaak Moore",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Cole Koop",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Gudmund Roething",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Lamine Conde",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Anthony Brady",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Will Zylyk",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Tarun Saroya",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Simon Reid",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Julian Malfair",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Toby Adiese",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Ty Lockwood",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Larry Shyakasiga",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Mathias Schertzer",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Wisdom Sunday",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Tylen Lewis",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Mason Clerke",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Dom Zaino",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Parker Fleming",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Kai Bohmert",
+   "num": "",
+   "alias": ""
+  },
+  {
+   "name": "Victor (VJ) Phillips",
+   "num": "",
+   "alias": ""
+  }
+ ],
+ "weights": {
+  "steal": 3,
+  "charge": 3,
+  "tip": 1,
+  "pursuit": 2,
+  "you": 1,
+  "block": 1,
+  "wallup": 1,
+  "p6": 3,
+  "orebx": 3,
+  "pt": 2,
+  "rr": 1,
+  "up": 1,
+  "factor": 0.3333
+ },
+ "leadIn": 5,
+ "lang": "en-CA",
+ "squads": [
+  "White",
+  "Black",
+  "Blue"
+ ],
+ "sessions": [
+  {
+   "id": "smvijjp2joxqw",
+   "name": "Heat Internal Scrimmage",
+   "date": "2026-10-20",
+   "type": "Scrimmage",
+   "opponent": "Blue White and Black ",
+   "videos": [
+    {
+     "id": "vmvijjp2jq31q",
+     "label": "Segment",
+     "url": "https://youtu.be/It36QQ5rDQk?si=_SAV7DmEWJKysk4S"
+    },
+    {
+     "id": "vmvijkkrh6t7b",
+     "label": "Segment",
+     "url": "https://youtu.be/YPn01cY3l2c?si=nyYXMCjlhEFPbozK"
+    },
+    {
+     "id": "vmvijkzj6udry",
+     "label": "Q3",
+     "url": "https://youtu.be/VpsFjiPQ3a8?si=Ps1H7jBrGMtX-0sC"
+    }
+   ],
+   "squadOf": {
+    "Michael Adarkwah Nti": "White",
+    "Isaak Moore": "White",
+    "Ty Lockwood": "White",
+    "Larry Shyakasiga": "White",
+    "Kai Bohmert": "White",
+    "DJ Roberts": "White",
+    "Enrique Garcia": "Black",
+    "Parker Fleming": "Blue",
+    "Ariel Tsaiger": "Blue",
+    "Lamine Conde": "Black",
+    "Anthony Brady": "Blue",
+    "Tylen Lewis": "Blue",
+    "Will Zylyk": "Black",
+    "Mason Clerke": "Black",
+    "Tarun Saroya": "Blue",
+    "Dom Zaino": "Blue"
+   },
+   "plays": [
+    {
+     "id": "pmvijteggz4kd",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 4,
+     "squad": null,
+     "text": "0:04 DJ Roberts upcycle",
+     "items": [
+      {
+       "p": "DJ Roberts",
+       "k": "UP"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613538160,
+     "src": "typed"
+    },
+    {
+     "id": "pmvijtw30q5p8",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 5,
+     "squad": null,
+     "text": "0:05 Isaak more paint touch",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "PT"
+      }
+     ],
+     "notes": [
+      "Heard “more” as Isaak Moore"
+     ],
+     "warns": [],
+     "ts": 1792613561004,
+     "src": "typed"
+    },
+    {
+     "id": "pmvijuk7phy4v",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 5,
+     "squad": null,
+     "text": "0:05 Isaak Moore layup gold make",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "2M",
+       "tier": "Gold",
+       "stype": "Layup"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613592277,
+     "src": "typed"
+    },
+    {
+     "id": "pmvijwtapx9ql",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 17,
+     "squad": null,
+     "text": "0:17 Ariel upcycle",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "UP"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613697361,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik2k83nm5g",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 17,
+     "squad": null,
+     "text": "0:17 Faisal paint touch",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "PT"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613965539,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik2tgh96t2",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 17,
+     "squad": null,
+     "text": "0:17 Faisal Made 2 pt layup gold",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "2M",
+       "tier": "Gold",
+       "stype": "Layup"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613977505,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik2y871qj8",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 17,
+     "squad": null,
+     "text": "0:17 Ariel assist",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "AS"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792613983687,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik40v5332h",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 35,
+     "squad": null,
+     "text": "0:35 Isaak paint touch",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "PT"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792614033761,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik4l4a9ab8",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 35,
+     "squad": null,
+     "text": "0:35 Isaak right read",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792614060010,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik6z7u3qa4",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 35,
+     "squad": "Blue",
+     "text": "0:35 mook in blue deflection",
+     "items": [
+      {
+       "p": null,
+       "k": "TP"
+      }
+     ],
+     "notes": [
+      "Ignored: mook"
+     ],
+     "warns": [
+      "No player heard"
+     ],
+     "ts": 1792614171594,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik7pooccys",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 39,
+     "squad": null,
+     "text": "0:39 Isaak pursuit",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "PU"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792614205896,
+     "src": "typed"
+    },
+    {
+     "id": "pmvik88ctky64",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 42,
+     "squad": null,
+     "text": "0:42 isaak missed three top in motion bronze",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "3X",
+       "tier": "Bronze",
+       "stype": null
+      }
+     ],
+     "notes": [
+      "Ignored: motion"
+     ],
+     "warns": [],
+     "ts": 1792614230093,
+     "src": "typed"
+    },
+    {
+     "id": "pmvika8baxqd4",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 44,
+     "squad": null,
+     "text": "0:44 dom defensive rebound",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "DR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792614323350,
+     "src": "typed"
+    },
+    {
+     "id": "pmvikwj7h1mmx",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 45,
+     "squad": null,
+     "text": "45 seconds Dom upcycle",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "UP"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615363901,
+     "src": "voice"
+    },
+    {
+     "id": "pmvikxme3yohz",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 52,
+     "squad": null,
+     "text": "0:52 Faisal missed 3 from top catch and shoot",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "3X",
+       "tier": "Silver",
+       "stype": "Catch & shoot 3"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615414683,
+     "src": "typed"
+    },
+    {
+     "id": "pmvikys62lbym",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 53,
+     "squad": null,
+     "text": "53 seconds Kai boner defensive rebound",
+     "items": [
+      {
+       "p": "Kai Bohmert",
+       "k": "DR"
+      }
+     ],
+     "notes": [
+      "Ignored: boner"
+     ],
+     "warns": [],
+     "ts": 1792615468826,
+     "src": "voice"
+    },
+    {
+     "id": "pmvikziubg2ap",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 58,
+     "squad": null,
+     "text": "58 seconds DJ right read",
+     "items": [
+      {
+       "p": "DJ Roberts",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615503395,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil0x04ftm8",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 1,
+     "squad": null,
+     "text": "1 minute 1 second tie Lockwood Corner 3 make catch and shoot",
+     "items": [
+      {
+       "p": "Ty Lockwood",
+       "k": "3M",
+       "tier": "Silver",
+       "stype": "Catch & shoot 3"
+      }
+     ],
+     "notes": [
+      "Ignored: minute tie"
+     ],
+     "warns": [],
+     "ts": 1792615568404,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil1l5q5qio",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 4,
+     "squad": null,
+     "text": "1 minute 4 seconds Dom Zano upcycle",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "UP"
+      }
+     ],
+     "notes": [
+      "Ignored: minute",
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [],
+     "ts": 1792615599710,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil1ulakhs1",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 7,
+     "squad": null,
+     "text": "1 minute 7 Seconds Faizal paint touch",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "PT"
+      }
+     ],
+     "notes": [
+      "Ignored: minute",
+      "Heard “faizal” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792615611934,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil27iwx9zg",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 70,
+     "squad": null,
+     "text": "made two pointer",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "2M",
+       "tier": null,
+       "stype": null
+      }
+     ],
+     "notes": [
+      "Shot not graded"
+     ],
+     "warns": [],
+     "ts": 1792615628696,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil395s1sho",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 70,
+     "squad": null,
+     "text": "1 minute 8 seconds Faizal assist",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "TO",
+       "toType": "Violation",
+       "ball": "Dead",
+       "detail": "backcourt / clock"
+      },
+      {
+       "p": "Faisal Shawwa",
+       "k": "AS"
+      }
+     ],
+     "notes": [
+      "Ignored: minute",
+      "Heard “faizal” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792615677472,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil49kw147m",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 17,
+     "squad": null,
+     "text": "1 minute 17 seconds Kai boner",
+     "items": [],
+     "notes": [
+      "Ignored: minute boner"
+     ],
+     "warns": [
+      "No stat heard"
+     ],
+     "ts": 1792615724672,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil4clklibf",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 77,
+     "squad": null,
+     "text": "live ball turnover pass picked off",
+     "items": [
+      {
+       "p": "Kai Bohmert",
+       "k": "TO",
+       "toType": "Passing",
+       "ball": "Live",
+       "detail": "picked off"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615728584,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil5zwprfzw",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 81,
+     "squad": null,
+     "text": "1:21 ariel pursuit",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "PU"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615805449,
+     "src": "typed"
+    },
+    {
+     "id": "pmvil69qpphcb",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 82,
+     "squad": null,
+     "text": "122 Ariel upcycle",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "UP"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615818193,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil6t6si793",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 85,
+     "squad": null,
+     "text": "124 Dom Zano paint touch",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "PT"
+      }
+     ],
+     "notes": [
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [],
+     "ts": 1792615843396,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil71vzcxwe",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 85,
+     "squad": null,
+     "text": "block",
+     "items": [
+      {
+       "p": "Michael Adarkwah Nti",
+       "k": "BK"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615854671,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil7ixhusda",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 87,
+     "squad": null,
+     "text": "127 Ariel offensive rebound",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "OR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615876757,
+     "src": "voice"
+    },
+    {
+     "id": "pmvil86xqb1t6",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 87,
+     "squad": null,
+     "text": "1:27 ariel, right read",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615907870,
+     "src": "typed"
+    },
+    {
+     "id": "pmvil8gibeks7",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 89,
+     "squad": null,
+     "text": "1:29 faisal dunk made 2 gold",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "2M",
+       "tier": "Gold",
+       "stype": "Layup"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615920275,
+     "src": "typed"
+    },
+    {
+     "id": "pmvil8m038mwr",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 89,
+     "squad": null,
+     "text": "1:29 ariel assist",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "AS"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792615927395,
+     "src": "typed"
+    },
+    {
+     "id": "pmvilpvw8h5tu",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 114,
+     "squad": null,
+     "text": "154 paint touch tie Lockwood",
+     "items": [
+      {
+       "p": "Ty Lockwood",
+       "k": "PT"
+      }
+     ],
+     "notes": [
+      "Ignored: tie"
+     ],
+     "warns": [],
+     "ts": 1792616733368,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilq9jifnau",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 117,
+     "squad": null,
+     "text": "156 post-op tilockwood missed two",
+     "items": [
+      {
+       "p": "Ty Lockwood",
+       "k": "2X",
+       "tier": "Gold",
+       "stype": "Post-up"
+      }
+     ],
+     "notes": [
+      "Heard “tilockwood” as Ty Lockwood"
+     ],
+     "warns": [],
+     "ts": 1792616751054,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilrlnbf11t",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 116,
+     "squad": null,
+     "text": "157 Simon Reed offensive rebound",
+     "items": [
+      {
+       "p": "Simon Reid",
+       "k": "OR"
+      }
+     ],
+     "notes": [
+      "Heard “reed” as Simon Reid"
+     ],
+     "warns": [],
+     "ts": 1792616813399,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilrtztt1mh",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 116,
+     "squad": null,
+     "text": "156 Simon Reed missed putback",
+     "items": [
+      {
+       "p": "Simon Reid",
+       "k": "2X",
+       "tier": "Gold",
+       "stype": "Putback"
+      }
+     ],
+     "notes": [
+      "Heard “reed” as Simon Reid"
+     ],
+     "warns": [],
+     "ts": 1792616824217,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilsnnluox9",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 118,
+     "squad": null,
+     "text": "158 Don Zano defensive rebound",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "DR"
+      }
+     ],
+     "notes": [
+      "Ignored: don",
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [],
+     "ts": 1792616862657,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilt1rbpqjs",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 120,
+     "squad": null,
+     "text": "2 minutes Tom Zano upcycle",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "UP"
+      }
+     ],
+     "notes": [
+      "Ignored: minutes tom",
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [
+      "Shot: say make or miss"
+     ],
+     "ts": 1792616880935,
+     "src": "voice"
+    },
+    {
+     "id": "pmviltrp13fox",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 122,
+     "squad": null,
+     "text": "202 aerial Sager up right read",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "RR"
+      }
+     ],
+     "notes": [
+      "Heard “aerial” as Ariel Tsaiger",
+      "Heard “sager” as Ariel Tsaiger"
+     ],
+     "warns": [],
+     "ts": 1792616914549,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilui7aa1zf",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 125,
+     "squad": null,
+     "text": "205 Thailand Lewis missed layup",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "2X",
+       "tier": "Gold",
+       "stype": "Layup"
+      }
+     ],
+     "notes": [
+      "Ignored: thailand"
+     ],
+     "warns": [],
+     "ts": 1792616948902,
+     "src": "voice"
+    },
+    {
+     "id": "pmviluzg0zd3y",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 125,
+     "squad": null,
+     "text": "205 Anthony Brady offensive rebound",
+     "items": [
+      {
+       "p": "Anthony Brady",
+       "k": "OR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792616971248,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilvvos1pqx",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 125,
+     "squad": null,
+     "text": "2:05 anthony made 2pt gold putback",
+     "items": [
+      {
+       "p": "Anthony Brady",
+       "k": "2M",
+       "tier": "Gold",
+       "stype": "Putback"
+      }
+     ],
+     "notes": [
+      "Ignored: 2pt"
+     ],
+     "warns": [],
+     "ts": 1792617013036,
+     "src": "typed"
+    },
+    {
+     "id": "pmvilxfmmt1q4",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 139,
+     "squad": null,
+     "text": "219 Ty Lockwood missed mid-range jumper red shot",
+     "items": [
+      {
+       "p": "Ty Lockwood",
+       "k": "2X",
+       "tier": "Red",
+       "stype": "Mid-range"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617085534,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilyct0xwz1",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 141,
+     "squad": null,
+     "text": "221 feisel defensive rebound",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "DR"
+      }
+     ],
+     "notes": [
+      "Heard “feisel” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792617128532,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilyulfz666",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 148,
+     "squad": null,
+     "text": "Thailand Lewis",
+     "items": [],
+     "notes": [
+      "Ignored: thailand"
+     ],
+     "warns": [
+      "No stat heard"
+     ],
+     "ts": 1792617151587,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilz7aifrpq",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 148,
+     "squad": null,
+     "text": "2:28 tylen lewis right read",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617168042,
+     "src": "typed"
+    },
+    {
+     "id": "pmvilzdfiv59n",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 150,
+     "squad": null,
+     "text": "no more exercise",
+     "items": [
+      {
+       "p": "Isaak Moore",
+       "k": "2X",
+       "tier": null,
+       "stype": null
+      }
+     ],
+     "notes": [
+      "Booked as a two",
+      "Shot not graded",
+      "Ignored: exercise",
+      "Heard “more” as Isaak Moore"
+     ],
+     "warns": [],
+     "ts": 1792617175998,
+     "src": "voice"
+    },
+    {
+     "id": "pmvilzk92b26j",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 150,
+     "squad": null,
+     "text": "2:30 fisel right read",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "RR"
+      }
+     ],
+     "notes": [
+      "Heard “fisel” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792617184838,
+     "src": "voice"
+    },
+    {
+     "id": "pmvim0l7lr8cf",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 151,
+     "squad": null,
+     "text": "2:31 ariel catch and shoot wing 3 make",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "3M",
+       "tier": "Silver",
+       "stype": "Catch & shoot 3"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617232737,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim0tu11mqf",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 151,
+     "squad": null,
+     "text": "2:31 faizal assist",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "AS"
+      }
+     ],
+     "notes": [
+      "Heard “faizal” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792617243913,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim222zbdq8",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 167,
+     "squad": null,
+     "text": "2:47 dj paint touch",
+     "items": [
+      {
+       "p": "DJ Roberts",
+       "k": "PT"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617301259,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim28in1yjm",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 167,
+     "squad": null,
+     "text": "2:47 dj floater missed 2 red shot",
+     "items": [
+      {
+       "p": "DJ Roberts",
+       "k": "2X",
+       "tier": "Red",
+       "stype": "Floater"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617309599,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim34w4u6be",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 169,
+     "squad": null,
+     "text": "249 Don Zano redefensive rebound",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "DR"
+      }
+     ],
+     "notes": [
+      "“Rebound” booked as defensive",
+      "Ignored: don redefensive",
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [],
+     "ts": 1792617351556,
+     "src": "voice"
+    },
+    {
+     "id": "pmvim3gc0dxqf",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 170,
+     "squad": null,
+     "text": "250 Dom Zano upcycle",
+     "items": [
+      {
+       "p": "Dom Zaino",
+       "k": "UP"
+      }
+     ],
+     "notes": [
+      "Heard “zano” as Dom Zaino"
+     ],
+     "warns": [],
+     "ts": 1792617366384,
+     "src": "voice"
+    },
+    {
+     "id": "pmvim3pc8kwvo",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 173,
+     "squad": null,
+     "text": "253 fisel paint touch",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "PT"
+      }
+     ],
+     "notes": [
+      "Heard “fisel” as Faisal Shawwa"
+     ],
+     "warns": [],
+     "ts": 1792617378056,
+     "src": "voice"
+    },
+    {
+     "id": "pmvim4q21woeb",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 174,
+     "squad": null,
+     "text": "2:54 faisal right read",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617425641,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim58l5b20o",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 174,
+     "squad": null,
+     "text": "2:54 ariel wing 3 miss pass off target bronze",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "3X",
+       "tier": "Bronze",
+       "stype": null
+      }
+     ],
+     "notes": [
+      "Ignored: target"
+     ],
+     "warns": [],
+     "ts": 1792617449657,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim726ebsit",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 204,
+     "squad": null,
+     "text": "324 Mike missed two mid-range jumper red shot",
+     "items": [
+      {
+       "p": "Michael Adarkwah Nti",
+       "k": "2X",
+       "tier": "Red",
+       "stype": "Mid-range"
+      }
+     ],
+     "notes": [
+      "Ignored: mike"
+     ],
+     "warns": [],
+     "ts": 1792617534662,
+     "src": "voice"
+    },
+    {
+     "id": "pmvim93lnflj9",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 224,
+     "squad": null,
+     "text": "3:44 ty lewis paint touch in 6 seconds",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "P6"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617629819,
+     "src": "typed"
+    },
+    {
+     "id": "pmvim9rzdw2c5",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 224,
+     "squad": null,
+     "text": "344 Thailand Lewis missed two point dunk",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "2X",
+       "tier": "Gold",
+       "stype": "Layup"
+      }
+     ],
+     "notes": [
+      "Ignored: thailand"
+     ],
+     "warns": [],
+     "ts": 1792617661417,
+     "src": "voice"
+    },
+    {
+     "id": "pmvimah61lep7",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 226,
+     "squad": null,
+     "text": "346 Thailand Lewis offensive rebound",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "OR"
+      }
+     ],
+     "notes": [
+      "Ignored: thailand"
+     ],
+     "warns": [],
+     "ts": 1792617694057,
+     "src": "voice"
+    },
+    {
+     "id": "pmvimb2oo20i0",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 229,
+     "squad": null,
+     "text": "3:49 tylen lewis right read",
+     "items": [
+      {
+       "p": "Tylen Lewis",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617721944,
+     "src": "typed"
+    },
+    {
+     "id": "pmvimbfj6tljg",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 231,
+     "squad": null,
+     "text": "3:51 anthony brady paint touch",
+     "items": [
+      {
+       "p": "Anthony Brady",
+       "k": "PT"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617738594,
+     "src": "typed"
+    },
+    {
+     "id": "pmvimbrn3ylrr",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 232,
+     "squad": null,
+     "text": "3:52 Anthony Brady right read",
+     "items": [
+      {
+       "p": "Anthony Brady",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617754287,
+     "src": "typed"
+    },
+    {
+     "id": "pmvimc1df6e8m",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 233,
+     "squad": null,
+     "text": "3:53 faisal right read",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "RR"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617766899,
+     "src": "typed"
+    },
+    {
+     "id": "pmvimckcsxwxh",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 235,
+     "squad": null,
+     "text": "3:55 ariel catch and shoot wing 3 make",
+     "items": [
+      {
+       "p": "Ariel Tsaiger",
+       "k": "3M",
+       "tier": "Silver",
+       "stype": "Catch & shoot 3"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617791500,
+     "src": "typed"
+    },
+    {
+     "id": "pmvimctmhyckv",
+     "vid": "vmvijjp2jq31q",
+     "period": "Q1",
+     "t": 235,
+     "squad": null,
+     "text": "3:55 faisal assist",
+     "items": [
+      {
+       "p": "Faisal Shawwa",
+       "k": "AS"
+      }
+     ],
+     "notes": [],
+     "warns": [],
+     "ts": 1792617803513,
+     "src": "typed"
+    }
+   ],
+   "curVid": "vmvijjp2jq31q"
+  }
+ ],
+ "cur": "smvijjp2joxqw"
+}
