@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heat Film Caller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Film-room layout: video and the call bar on the left, play-by-play on the right, the four tallies underneath. One dark look on purpose. */
+:root{
+  color-scheme:dark;
+  --bg:#0E1216; --panel:#161C22; --sunk:#1D252D; --raise:#232C35; --ink:#E8ECEF; --muted:#93A0AC; --line:#2B3640;
+  --heat:#F0793B; --heat-ink:#1B0C04; --heat-soft:#3A2417;
+  --ok:#4CC685; --ok-soft:#14362A; --bad:#F08268; --bad-soft:#43231C; --warn:#E7B55A; --warn-soft:#3B2E15; --info:#72A9E8; --info-soft:#18293D;
+  --gold:#E2B33D; --silver:#B9C3CC; --bronze:#C98552; --red:#E5604A;
+  --j-white:#F3F5F7; --j-black:#0A0C0E; --j-blue:#2F6BD0; --j-other:#6D7883;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--body);padding:0 16px 40px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--heat);outline-offset:2px}
+.wrap{max-width:none;margin:0 auto}
+header.top{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding:12px 0;position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.brand b{color:var(--heat)}
+nav.tabs{display:flex;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:4px}
+nav.tabs button{font:600 15px var(--display);letter-spacing:.08em;text-transform:uppercase;border:0;background:none;color:var(--muted);padding:7px 14px;border-radius:7px}
+nav.tabs button[aria-selected="true"]{background:var(--raise);color:var(--ink)}
+.sesspick{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0}
+.sesspick select{max-width:340px}
+.label{font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.note{font-size:13px;color:var(--muted)}
+input,select,textarea{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:38px}
+textarea{width:100%;min-height:90px}
+.btn{border:1px solid var(--line);background:var(--raise);border-radius:8px;min-height:38px;padding:0 14px;font-weight:600}
+.btn:hover{border-color:#3d4b57}
+.btn.primary{background:var(--heat);border-color:var(--heat);color:var(--heat-ink)}
+.btn.ghost{background:none}
+.btn.danger{color:var(--bad)}
+.btn.armed{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.banner{background:var(--warn-soft);color:var(--ink);border:1px solid #5a4620;border-radius:8px;padding:8px 12px;font-size:13.5px}
+
+/* call view */
+.callgrid{display:grid;grid-template-columns:minmax(0,4fr) minmax(250px,1fr);gap:12px;padding-top:12px;align-items:start}
+@media (max-width:900px){.callgrid{grid-template-columns:1fr}}
+.vidbox{position:relative;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;width:100%;max-height:calc(100vh - 190px);margin:0 auto}
+.vidbox>div,.vidbox>video,.vidbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vidempty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;color:var(--muted)}
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tbtn{border:1px solid var(--line);background:var(--raise);border-radius:8px;min-width:44px;min-height:38px;font-weight:700}
+.clock{font:700 30px var(--display);font-variant-numeric:tabular-nums;letter-spacing:.03em;min-width:92px;text-align:center}
+.clock input{font:700 24px var(--display);width:110px;text-align:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:4px 12px;min-height:32px;font-weight:600;font-size:13.5px}
+.chip[aria-pressed="true"]{background:var(--heat-soft);border-color:var(--heat);color:var(--ink)}
+.callbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start}
+.callbar .book{grid-column:1 / -1;min-height:40px}
+.preview:empty,#lastResult:empty{display:none}
+.divider{border-top:1px solid var(--line);margin:0 -12px}
+.mic{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--raise);display:grid;place-items:center}
+.mic svg{width:24px;height:24px}
+.mic.on{background:var(--heat);border-color:var(--heat);color:var(--heat-ink);box-shadow:0 0 0 6px rgba(240,121,59,.18)}
+.callin{width:100%;font-size:15px;min-height:46px}
+.heard{min-height:20px;font-size:12.5px;color:var(--muted);font-style:italic;overflow-wrap:anywhere}
+.preview{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:28px}
+.result{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--sunk);display:flex;flex-direction:column;gap:6px}
+.result.flash{border-color:var(--heat)}
+
+/* stat tags */
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:600;background:var(--raise);border:1px solid var(--line);white-space:nowrap}
+.tag .pn{color:var(--ink)}
+.tag .st{color:var(--muted);font-weight:500}
+.tag.mk{background:var(--ok-soft);border-color:#225a40}
+.tag.ms{background:var(--bad-soft);border-color:#6a3328}
+.tag.hv{background:var(--heat-soft);border-color:#6b3a1f}
+.tag.to{background:var(--info-soft);border-color:#29466a}
+.tier{display:inline-block;width:9px;height:9px;border-radius:50%}
+.t-Gold{background:var(--gold)} .t-Silver{background:var(--silver)} .t-Bronze{background:var(--bronze)} .t-Red{background:var(--red)}
+.warn{color:var(--warn);font-size:13px;font-weight:600}
+.small{font-size:12.5px;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #556270;vertical-align:-1px;flex:none}
+
+/* play-by-play */
+.pbp{display:flex;flex-direction:column;gap:0;max-height:calc(100vh - 330px);min-height:240px;overflow:auto;margin:0 -12px -12px;border-top:1px solid var(--line)}
+.pbpcard{padding:12px;position:sticky;top:76px}
+.play{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:start}
+.play .acts{grid-column:2;justify-content:flex-end}
+.play .tag{white-space:normal}
+.play:hover{background:#141a20}
+.play .tm{display:flex;flex-direction:column;gap:2px}
+.tlink{font:700 16px var(--display);font-variant-numeric:tabular-nums;background:none;border:0;color:var(--heat);padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.tlink:disabled{color:var(--muted);text-decoration:none;cursor:default}
+.play .bd{display:flex;flex-direction:column;gap:4px;min-width:0}
+.play .tx{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.play .acts{display:flex;gap:4px}
+.ib{border:1px solid var(--line);background:none;border-radius:6px;min-width:30px;height:30px;color:var(--muted);font-size:13px;padding:0 7px}
+.ib.armed{color:var(--bad);border-color:var(--bad)}
+.play.warned{box-shadow:inset 3px 0 0 var(--warn)}
+
+/* tallies */
+.tallies{display:flex;flex-direction:column;gap:18px}
+.tsec{display:flex;flex-direction:column;gap:6px}
+.tsec h3{margin:0;font:700 18px var(--display);letter-spacing:.06em;text-transform:uppercase}
+.tallyhead{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{font:600 12.5px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--sunk);position:sticky;top:0}
+th.l,td.l{text-align:left}
+td.l{font-weight:600}
+td.hl{font-weight:700;color:var(--heat)}
+td.z{color:#56626d}
+tr.tot td{font-weight:700;background:var(--sunk)}
+tr.sq td{background:#131920;color:var(--ink)}
+th.grp{background:var(--raise);color:var(--ink)}
+
+/* sessions & setup */
+.sessions{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.scard{display:flex;flex-direction:column;gap:8px}
+.scard h3{margin:0;font:700 20px var(--display);letter-spacing:.04em;text-transform:uppercase}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field input,.field select{width:100%}
+.vrow{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:8px;align-items:center}
+.sqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:2px 18px}
+.sqrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--sunk);padding:5px 10px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--heat-soft);color:var(--ink)}
+.rtable input{width:100%;min-height:34px;padding:5px 8px}
+.rtable td{padding:3px 6px}
+.help{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+.help h3{margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase}
+.help p{margin:0;color:var(--muted);max-width:70ch}
+.help table td{text-align:left;white-space:normal;vertical-align:top}
+.help code,.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--sunk);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.empty h2{margin:0;font:700 24px var(--display);letter-spacing:.04em;text-transform:uppercase}
+.empty p{margin:0;color:var(--muted);max-width:68ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">Heat <b>Film</b> Caller</div>
+  <nav class="tabs" role="tablist">
+    <button data-view="call" aria-selected="true">Call</button>
+    <button data-view="sessions" aria-selected="false">Sessions</button>
+    <button data-view="setup" aria-selected="false">Setup</button>
+    <button data-view="help" aria-selected="false">How to call</button>
+  </nav>
+  <div class="sesspick"><label class="label" for="sessSel">Session</label><select id="sessSel"></select></div>
+</header>
+
+<!-- ===================== CALL ===================== -->
+<section id="v-call">
+  <div id="noSess" class="empty" style="margin-top:14px" hidden>
+    <h2>Start a session</h2>
+    <p>A session is one game or scrimmage. Give it a name, paste the YouTube links (a full game, halves, quarters or a short segment) and start calling plays.</p>
+    <div class="row"><button class="btn primary" data-act="new-session">New session</button><button class="btn" data-act="sample">Load a sample scrimmage</button></div>
+  </div>
+  <div id="callMain">
+    <div class="callgrid">
+      <div class="card" style="gap:10px">
+        <div class="row between">
+          <div class="chips" id="vidChips"></div>
+          <div class="row"><button class="btn ghost" data-act="pick-file">Use a video file</button><input type="file" id="fileIn" accept="video/*" hidden></div>
+        </div>
+        <div class="vidbox" id="vidbox">
+          <div id="ytHost"></div>
+          <video id="localVid" controls hidden></video>
+          <div class="vidempty" id="vidEmpty"></div>
+        </div>
+        <div id="ytMsg" class="banner" hidden></div>
+        <div class="transport">
+          <button class="tbtn" data-act="seek" data-d="-5" title="Back 5 seconds (←)">−5</button>
+          <button class="tbtn" data-act="toggle" id="playBtn" title="Play / pause (space)" style="min-width:60px">▶</button>
+          <button class="tbtn" data-act="seek" data-d="5" title="Forward 5 seconds (→)">+5</button>
+          <div class="clock" id="clock">0:00</div>
+          <select id="rate" title="Playback speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+          <span class="label" style="margin-left:auto">Period</span>
+          <div class="chips" id="perChips"></div>
+        </div>
+      </div>
+
+      <div class="card pbpcard">
+        <div class="callbar">
+          <button class="mic" id="micBtn" data-act="mic" title="Start or stop listening (M)" aria-label="Start listening">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          </button>
+          <div style="min-width:0;display:flex;flex-direction:column;gap:4px">
+            <input class="callin" id="callIn" autocomplete="off" spellcheck="false" placeholder="Type a call, e.g. Tarun drive make assist Ty at 39">
+            <div class="heard" id="heard">Press the mic or type, then Enter. Add “at 39” to stamp an earlier moment.</div>
+          </div>
+          <button class="btn primary book" data-act="book">Book</button>
+        </div>
+        <div class="preview" id="preview"></div>
+        <div id="lastResult"></div>
+        <div class="divider"></div>
+        <div class="row between">
+          <span class="label">Play-by-play</span>
+          <div class="row"><span class="small" id="pbpCount"></span><button class="btn ghost" data-act="undo" title="Undo the last booked call (U)">Undo last</button></div>
+        </div>
+        <div class="pbp" id="pbp"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="tallyhead">
+        <span class="label">Session totals</span>
+        <div class="row">
+          <div class="chips" id="sqFilter"></div>
+          <button class="btn ghost" data-act="csv">Download plays (CSV)</button>
+        </div>
+      </div>
+      <div id="tallies" class="tallies"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SESSIONS ===================== -->
+<section id="v-sessions" hidden>
+  <div class="row between" style="padding:14px 0">
+    <span class="label">Games and scrimmages</span>
+    <div class="row"><button class="btn" data-act="sample">Load a sample scrimmage</button><button class="btn primary" data-act="new-session">New session</button></div>
+  </div>
+  <div id="sessForm" class="card" hidden></div>
+  <div class="sessions" id="sessList" style="margin-top:12px"></div>
+</section>
+
+<!-- ===================== SETUP ===================== -->
+<section id="v-setup" hidden>
+  <div class="help" style="padding-top:14px">
+    <div class="card">
+      <div class="row between"><h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Roster</h3><button class="btn" data-act="add-player">Add player</button></div>
+      <p class="note" style="margin:0">Spoken names are extra words the microphone might hear for a player, separated by commas, for example “Shaq, Larry S”. A jersey number lets you call “number 10”.</p>
+      <div class="tbl"><table class="rtable" id="rosterT"></table></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">HVP points</h3>
+        <p class="note" style="margin:0">Same values as the Scoring Key in the workbook. Steals, blocks and offensive rebounds earn their points automatically.</p>
+        <div class="form" id="weightsF"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Options</h3>
+        <div class="form">
+          <div class="field"><label class="label" for="optLead">Clip lead-in (seconds)</label><input id="optLead" type="number" min="0" max="30"></div>
+          <div class="field"><label class="label" for="optLang">Speech accent</label><select id="optLang"><option value="en-CA">English (Canada)</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="en-AU">English (Australia)</option></select></div>
+          <div class="field"><label class="label" for="optSquads">Scrimmage squads</label><input id="optSquads" placeholder="White, Black, Blue"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Backup</h3>
+        <p class="note" style="margin:0">Everything is saved in this browser. Download a backup to move it to another computer or keep a copy.</p>
+        <div class="row"><button class="btn" data-act="backup">Download backup</button><button class="btn" data-act="restore">Restore from backup</button><input type="file" id="restoreIn" accept=".json,application/json" hidden></div>
+      </div>
+      <div class="row"><button class="btn primary" data-act="save-setup">Save setup</button><span class="note" id="setupMsg"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HELP ===================== -->
+<section id="v-help" hidden>
+  <div class="help" style="padding-top:14px">
+    <div class="card">
+      <h3>The shape of a call</h3>
+      <p>Say the player, then what happened, in plain basketball language. Add a colour in a scrimmage if you want to; the squad is usually known from the player. Add a time only when the play happened earlier than where the video is now.</p>
+      <table><tbody>
+        <tr><td><code>Tarun drive make gold assist Ty</code></td><td>Two-point make for Tarun, Gold, Drive; assist for Ty</td></tr>
+        <tr><td><code>Ty three make at 40</code></td><td>Three for Ty stamped at 0:40</td></tr>
+        <tr><td><code>Will turnover passing live at 43</code></td><td>Turnover, passing, live ball, at 0:43</td></tr>
+        <tr><td><code>Tarun steal at 39 Ty layup make at 41</code></td><td>Two plays in one breath, each with its own time</td></tr>
+        <tr><td><code>Tarun layup blocked by Ty</code></td><td>Miss for Tarun, block for Ty</td></tr>
+        <tr><td><code>Will turnover picked off by Tarun</code></td><td>Live-ball turnover for Will, steal for Tarun</td></tr>
+        <tr><td><code>Kai free throw 1 of 2</code></td><td>One make, one miss</td></tr>
+        <tr><td><code>White, number 10 steal</code></td><td>Jersey numbers work after “number”</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3>Times</h3>
+      <p>Every play is stamped with the video position when you started speaking or typing. A time in the call replaces it. Times are always video times.</p>
+      <table><tbody>
+        <tr><td><code>at 39</code> · <code>at 0:39</code> · <code>39 seconds</code></td><td>0:39</td></tr>
+        <tr><td><code>at 1:39</code> · <code>at one thirty nine</code> · <code>at 139</code></td><td>1:39</td></tr>
+        <tr><td><code>at 1:12:05</code></td><td>1 hour 12 minutes 5 seconds</td></tr>
+        <tr><td><code>back 6</code> · <code>6 seconds ago</code></td><td>Six seconds before the stamp</td></tr>
+      </tbody></table>
+      <h3>Voice commands</h3>
+      <table><tbody>
+        <tr><td><code>undo</code> · <code>scratch that</code></td><td>Remove the last booked call</td></tr>
+        <tr><td><code>play</code> · <code>pause</code></td><td>Control the video</td></tr>
+        <tr><td><code>rewind 10</code> · <code>skip 10</code></td><td>Jump back or forward</td></tr>
+        <tr><td><code>second quarter</code> · <code>overtime</code> · <code>second half</code></td><td>Change the period on a full-game video</td></tr>
+      </tbody></table>
+      <h3>Keyboard</h3>
+      <p><span class="kbd">Space</span> play or pause · <span class="kbd">←</span> <span class="kbd">→</span> five seconds · <span class="kbd">/</span> type a call · <span class="kbd">M</span> microphone · <span class="kbd">U</span> undo</p>
+    </div>
+    <div class="card">
+      <h3>Shots</h3>
+      <table><tbody>
+        <tr><td>Make</td><td>make, made, good, bucket, score, hits, drains, cash, splash, nails, finish, and-one</td></tr>
+        <tr><td>Miss</td><td>miss, no good, brick, rims out, short, long, airball, blocked</td></tr>
+        <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
+        <tr><td><span class="tier t-Silver"></span> Silver</td><td>catch and shoot, spot up</td></tr>
+        <tr><td><span class="tier t-Bronze"></span> Bronze</td><td>mid-range, jumper, pull-up, floater, runner, pull-up three, step-back three</td></tr>
+        <tr><td><span class="tier t-Red"></span> Red</td><td>say “red” or “bad shot” to downgrade any shot</td></tr>
+        <tr><td>Threes</td><td>three, trey, from deep, 3 pointer. A plain “three make” is booked ungraded; add the type or a tier</td></tr>
+        <tr><td>Free throws</td><td>free throw make, free throw miss, 1 of 2, both, split</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3>HVP, rebounds and turnovers</h3>
+      <table><tbody>
+        <tr><td>Paint touch in 6</td><td>paint touch in six, early paint touch, P6</td></tr>
+        <tr><td>Paint touch</td><td>paint touch, touched the paint</td></tr>
+        <tr><td>Right read · Upcycle</td><td>right read, good read · upcycle</td></tr>
+        <tr><td>Charge · Tip</td><td>charge, took a charge · tip, deflection</td></tr>
+        <tr><td>Pursuit · YOU · WallUp</td><td>pursuit, hustle, dive, loose ball · you, won his matchup, lockdown · wall up, verticality</td></tr>
+        <tr><td>Automatic HVP</td><td>steal, block and offensive rebound earn their points from the box score</td></tr>
+        <tr><td>Rebounds</td><td>offensive rebound, O board · defensive rebound, D board (a plain “rebound” is booked defensive)</td></tr>
+        <tr><td>Turnover types</td><td>passing (bad pass, picked off, thrown away) · handling (stripped, lost the handle, fumbled) · violation (travel, carry, 3 seconds, backcourt, offensive foul, out of bounds) · rushed (forced, panic, hurried)</td></tr>
+        <tr><td>Live or dead</td><td>say live or dead; picked off and stripped are live, violations are dead</td></tr>
+        <tr><td>Other</td><td>assist, dime · steal · block · foul</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>/* ===== Call parser: turns a spoken or typed call into plays and stat items ===== */
+(function (root) {
+  const NUMW = { zero: 0, oh: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19 };
+  const TENS = { twenty: 20, thirty: 30, forty: 40, fourty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+  const ORD = { first: 1, "1st": 1, second: 2, "2nd": 2, third: 3, "3rd": 3, fourth: 4, "4th": 4 };
+
+  // ---------- normalisation ----------
+  function normalize(s) {
+    s = String(s || "").toLowerCase();
+    s = s.replace(/[’']/g, "").replace(/[“”"]/g, " ");
+    s = s.replace(/&/g, " and ");
+    s = s.replace(/(\d)\s*:\s*(\d)/g, "$1:$2");
+    s = s.replace(/#\s*(\d)/g, " number $1");
+    s = s.replace(/@\s*/g, " at ");
+    s = s.replace(/[^a-z0-9:%\s-]/g, " ").replace(/-/g, " ");
+    let t = s.split(/\s+/).filter(Boolean);
+    const out = [];
+    for (let i = 0; i < t.length; i++) {
+      const w = t[i];
+      if (TENS[w] != null) {
+        let v = TENS[w];
+        if (t[i + 1] != null && NUMW[t[i + 1]] != null && NUMW[t[i + 1]] > 0 && NUMW[t[i + 1]] < 10) { v += NUMW[t[i + 1]]; i++ }
+        out.push(String(v));
+      } else if (NUMW[w] != null && !(w === "oh" && !/^\d/.test(t[i + 1] || ""))) {
+        out.push(String(NUMW[w]));
+      } else out.push(w);
+    }
+    // "to"/"too" heard for "two" right before make/miss words or "pointer"
+    for (let i = 0; i < out.length; i++) {
+      if ((out[i] === "to" || out[i] === "too") && /^(make|made|makes|miss|missed|misses|pointer|point)$/.test(out[i + 1] || "")) out[i] = "2";
+    }
+    // collapse spelled letters: "v j" -> "vj", "d j" -> "dj"
+    const col = [];
+    for (let i = 0; i < out.length; i++) {
+      if (/^[a-z]$/.test(out[i]) && /^[a-z]$/.test(out[i + 1] || "") && out[i] !== "a" ) {
+        let w = out[i]; while (/^[a-z]$/.test(out[i + 1] || "")) { w += out[++i] } col.push(w);
+      } else col.push(out[i]);
+    }
+    return " " + col.join(" ") + " ";
+  }
+
+  // ---------- roster index ----------
+  const STOP = new Set(("a an the and or of on in at to too for with by from his her he she it its is was off up out over back " +
+    "number no make made makes miss missed misses good read right pass shot shoot three two one free throw foul steal block " +
+    "board rebound assist turnover tip drive post wall you charge paint touch live dead white black blue gold silver bronze red " +
+    "then next got gets get takes took take had has have this that there").split(" "));
+
+  function buildIndex(roster) {
+    const players = roster.filter(p => p && p.name).map((p, i) => {
+      const nm = normalize(p.name.replace(/[()]/g, " ")).trim();
+      const toks = nm.split(" ").filter(Boolean);
+      const aliases = String(p.alias || "").split(",").map(a => normalize(a).trim()).filter(Boolean);
+      return { name: p.name, num: p.num != null && String(p.num).trim() !== "" ? String(p.num).trim() : null, toks, full: nm, aliases, i };
+    });
+    const tokMap = new Map();  // single token -> set of player indexes
+    const phrases = [];        // multi-token phrases
+    for (const pl of players) {
+      const add = (k) => { if (!k) return; if (!tokMap.has(k)) tokMap.set(k, new Set()); tokMap.get(k).add(pl.i) };
+      for (const t of pl.toks) if (t.length >= 2) add(t);
+      if (pl.toks.length > 1) phrases.push({ toks: pl.toks, i: pl.i });
+      for (const a of pl.aliases) { const at = a.split(" "); if (at.length > 1) phrases.push({ toks: at, i: pl.i, alias: true }); else add(at[0]) }
+    }
+    phrases.sort((a, b) => b.toks.length - a.toks.length);
+    return { players, tokMap, phrases, byIdx: Object.fromEntries(players.map(p => [p.i, p])) };
+  }
+
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+
+  // find player mentions in a token list; returns [{start,end,idx}]
+  function findPlayers(toks, ix) {
+    const found = [];
+    let i = 0;
+    while (i < toks.length) {
+      let hit = null;
+      // "number 10"
+      if (toks[i] === "number" && /^\d+$/.test(toks[i + 1] || "")) {
+        const pl = ix.players.find(p => p.num === toks[i + 1]);
+        if (pl) hit = { start: i, end: i + 2, idx: pl.i };
+      }
+      // multi-token phrases (full names, multiword aliases)
+      if (!hit) for (const ph of ix.phrases) {
+        const n = ph.toks.length; let ok = true;
+        for (let k = 0; k < n; k++) if (toks[i + k] !== ph.toks[k]) { ok = false; break }
+        if (ok) { hit = { start: i, end: i + n, idx: ph.i }; break }
+      }
+      // single tokens
+      if (!hit) {
+        const w = toks[i];
+        const set = ix.tokMap.get(w);
+        if (set && set.size === 1) hit = { start: i, end: i + 1, idx: [...set][0] };
+        else if (set && set.size > 1) {
+          // ambiguous first name: try next token as surname
+          const nxt = toks[i + 1]; const s2 = nxt && ix.tokMap.get(nxt);
+          const both = s2 ? [...set].filter(x => s2.has(x)) : [];
+          hit = both.length === 1 ? { start: i, end: i + 2, idx: both[0] } : { start: i, end: i + 1, idx: null, amb: [...set] };
+        } else if (w && w.length >= 4 && !STOP.has(w) && !/^\d/.test(w) && !VOCAB.has(w)) {
+          let best = null, bestD = 9, tie = false;
+          for (const [k, s] of ix.tokMap) {
+            if (s.size !== 1 || k.length < 4) continue;
+            const d = lev(w, k); const lim = Math.max(k.length, w.length) >= 6 ? 2 : 1;
+            if (d <= lim) { if (d < bestD) { best = [...s][0]; bestD = d; tie = false } else if (d === bestD && best !== [...s][0]) tie = true }
+          }
+          if (best != null && !tie) hit = { start: i, end: i + 1, idx: best, fuzzy: true };
+        }
+      }
+      if (hit) {
+        // jersey number said right before or after the name ("10 tarun", "tarun 10")
+        if (hit.idx != null) {
+          const pl = ix.byIdx[hit.idx];
+          if (pl.num && toks[hit.start - 1] === pl.num && !(found.length && found[found.length - 1].end === hit.start)) hit.start--;
+          else if (pl.num && toks[hit.end] === pl.num) hit.end++;
+        }
+        found.push(hit); i = hit.end;
+      } else i++;
+    }
+    return found;
+  }
+
+  // ---------- vocabulary ----------
+  const R = (s) => new RegExp("(?<= )(?:" + s + ")(?= )", "g");
+  const VOCAB = new Set(("make made makes miss missed misses good bucket basket score scores scored hit hits drains drained cash cashes splash nails buries finish finishes " +
+    "brick bricked short long airball rimmed clanks layup lay dunk slam jam drive driving transition breakaway post hook putback floater runner teardrop jumper midrange " +
+    "pullup elbow baseline fadeaway rebound board boards assist assists dime dimes helper dish dished feed steal steals stole takeaway block blocks blocked rejection swat " +
+    "swatted stuffed turnover turnovers travel traveling travelled walked carry carried backcourt stripped fumble fumbled bobble bobbled intercepted telegraphed overthrown " +
+    "charge charged tip tipped deflection deflected deflects pursuit hustle dive dove diving loose wallup verticality upcycle foul fouled reach hack personal gold silver " +
+    "bronze white black blue live dead rushed panic hurried free throw throws line read paint touch corner wing quarter half overtime").split(" "));
+
+  const SHOT_TYPES = [
+    { re: "catch and shoot|catch n shoot|catch shoot|c and s|spot up|spotup", type: "Catch & shoot 3", tier: "Silver", val: 3 },
+    { re: "pull up 3|pullup 3|step back 3|stepback 3|side step 3|sidestep 3|off the dribble 3|off dribble 3|off the bounce 3", type: "Off-dribble 3", tier: "Bronze", val: 3 },
+    { re: "putback|put back|tip in|tip back in|second chance|follow up|follow", type: "Putback", tier: "Gold", val: 2 },
+    { re: "layup|lay up|lay in|layin|finger roll|reverse|scoop|euro step|eurostep", type: "Layup", tier: "Gold", val: 2 },
+    { re: "dunk|dunks|slam|jam|flush", type: "Layup", tier: "Gold", val: 2 },
+    { re: "transition|fast break|breakaway|break away|coast to coast|leak out|run out|on the break", type: "Transition", tier: "Gold", val: 2 },
+    { re: "drive|drives|driving|downhill|attacks the rim|attack the rim|to the rim|at the rim", type: "Drive", tier: "Gold", val: 2 },
+    { re: "post up|postup|post move|post|hook shot|hook|drop step|up and under|back down|turnaround", type: "Post-up", tier: "Gold", val: 2 },
+    { re: "floater|floaters|runner|teardrop|float", type: "Floater", tier: "Bronze", val: 2 },
+    { re: "mid range|midrange|mid|jump shot|jumper|pull up|pullup|elbow|baseline j|baseline|fadeaway|fade away|fade", type: "Mid-range", tier: "Bronze", val: 2 },
+  ];
+  const TIERS = [["gold", "Gold"], ["silver", "Silver"], ["bronze", "Bronze"], ["red|bad shot|forced shot|heat check|red shot", "Red"]];
+
+  // ---------- time extraction ----------
+  function extractTimes(str) {
+    // returns {str, marks:[{pos, t:{abs}|{rel}}]} with markers replaced by " \u0001N "
+    const marks = [];
+    const put = (m, t) => { marks.push(t); return " \u0001" + (marks.length - 1) + " " };
+    // protect violation phrases and the 6-second paint touch
+    str = str.replace(R("paint touch in 6 seconds|paint touch in 6|paint touch inside 6|6 second paint touch|paint in 6|touch in 6|early paint touch|p6|p 6"), " ptsix ");
+    str = str.replace(/(?<!at )(?<= )(3|5|8|10) (?:seconds?|second violation)(?: in the (?:key|lane|paint))?(?= )/g, (m, n) => " sec" + n + "viol ");
+    str = str.replace(/(?<= )(?:at )?(\d{1,2}):(\d{2}):(\d{2})(?= )/g, (m, h, mi, s) => put(m, { abs: (+h) * 3600 + (+mi) * 60 + (+s) }));
+    str = str.replace(/(?<= )(?:at )?(\d{1,3}):(\d{2})(?= )/g, (m, mi, s) => put(m, { abs: (+mi) * 60 + (+s) }));
+    str = str.replace(/(?<= )at (\d{1,3}) (?:minutes? |mins? )?(?:and )?(\d{1,2}) (?:seconds?|secs?)(?= )/g, (m, mi, s) => put(m, { abs: (+mi) * 60 + (+s) }));
+    str = str.replace(/(?<= )at (\d{1,3}) (\d{2})(?= )/g, (m, mi, s) => (+s < 60 ? put(m, { abs: (+mi) * 60 + (+s) }) : m));
+    str = str.replace(/(?<= )at (\d{3,4})(?= )/g, (m, n) => { const mi = Math.floor(+n / 100), s = (+n) % 100; return s < 60 ? put(m, { abs: mi * 60 + s }) : m });
+    str = str.replace(/(?<= )(?:back|minus|rewind) (\d{1,3})(?: seconds?| secs?)?(?= )/g, (m, n) => put(m, { rel: -(+n) }));
+    str = str.replace(/(?<= )(\d{1,3}) seconds? ago(?= )/g, (m, n) => put(m, { rel: -(+n) }));
+    str = str.replace(/(?<= )at (\d{1,3})(?: seconds?| secs?| s)?(?= )/g, (m, n) => put(m, { abs: +n }));
+    str = str.replace(/(?<= )(\d{1,3}) (?:seconds?|secs?)(?= )/g, (m, n) => put(m, { abs: +n }));
+    return { str, marks };
+  }
+
+  // ---------- per-clause action parsing ----------
+  function take(state, re) {
+    let hit = false;
+    state.s = state.s.replace(R(re), () => { hit = true; return " " });
+    return hit;
+  }
+  function count(state, re) {
+    let n = 0;
+    state.s = state.s.replace(R(re), () => { n++; return " " });
+    return n;
+  }
+
+  function parseClause(text, opts) {
+    const st = { s: " " + text.replace(/\s+/g, " ").trim() + " " };
+    const items = [], notes = [], warns = [];
+    const add = (k, extra) => items.push(Object.assign({ k }, extra || {}));
+    const moved = opts.moved || "";
+
+    // connectors moved in from the previous clause
+    if (/assist|dime|from|feed/.test(moved)) add("AS");
+    if (/blocked by|block by/.test(moved)) add("BK");
+    if (/stolen by|steal by|picked by|picked off by/.test(moved)) add("ST");
+
+    // ---- HVP first (their phrases contain shot/turnover words) ----
+    const hv = [
+      ["ptsix", "P6"],
+      ["paint touch|paint touches|touched the paint|touch the paint|touches the paint|gets to the paint|got to the paint|paint attack|touch paint", "PT"],
+      ["right read|good read|correct read|great read|read", "RR"],
+      ["upcycle|up cycle|upcycled|up cycled|upsycle", "UP"],
+      ["took a charge|takes a charge|draws a charge|drew a charge|drew the charge|took the charge|takes the charge|charge taken|charge", "CH"],
+      ["wall up|wallup|walled up|walls up|wall|verticality|vertical", "WU"],
+      ["won the matchup|won his matchup|wins his matchup|wins the matchup|lockdown|lock down|locked down|locked up|shut down|shuts down|you", "YO"],
+      ["pursuit|hustle play|hustle|dives on the floor|dive on the floor|floor dive|dives|dive|dove|diving|loose ball|50 50|chase down|chased down|tough board|contested board", "PU"],
+    ];
+    // "tip" (deflection) must not take "tip in"
+    for (const [re, k] of hv) { if (take(st, re)) add(k) }
+    // offensive foul / charged = our player's offensive foul
+    let toType = null, toDetail = [], ball = null, isTO = false;
+    if (take(st, "offensive foul|charged|charging|moving screen|illegal screen|push off|pushoff")) { isTO = true; toType = "Violation"; toDetail.push("offensive foul"); add("PF"); ball = "Dead" }
+
+    // ---- free throws ----
+    let ft = null;
+    const ftCount = st.s.match(/ (\d) (?:of|for|out of) (\d) /);
+    if (take(st, "free throws|free throw|foul shots|foul shot|from the line|at the line|freebies|freebie|fts|ft")) ft = { m: null, a: null };
+    if (ftCount && (ft || /line|free|ft/.test(text))) { ft = ft || {}; ft.m = +ftCount[1]; ft.a = +ftCount[2]; st.s = st.s.replace(ftCount[0], " ") }
+    if (ft && take(st, "both|2 for 2|2 of 2")) { ft.both = true }
+    if (ft && take(st, "split|splits|split them")) { ft.m = 1; ft.a = 2 }
+
+    // ---- turnovers ----
+    const toRules = [
+      ["sec3viol|3 in the key|3 in the lane|3 seconds", "Violation", "3 seconds", "Dead"],
+      ["sec5viol|5 seconds", "Violation", "5 seconds", "Dead"],
+      ["sec8viol|sec10viol|8 seconds|10 seconds|over and back|backcourt|back court", "Violation", "backcourt / clock", "Dead"],
+      ["double dribble|carried|carry|palming|palmed|travelled|traveled|traveling|travelling|travel|walked|walk", "Violation", "travel / dribble", "Dead"],
+      ["stepped out|steps out|out of bounds|line violation|kicked ball", "Violation", "out of bounds", "Dead"],
+      ["thrown away|threw it away|throws it away|bad pass|errant pass|overthrown|overthrew|uncatchable|post entry|lob|skip pass|into traffic|pass into traffic", "Passing", "bad pass", null],
+      ["picked off|intercepted|interception|telegraphed|telegraphs", "Passing", "picked off", "Live"],
+      ["stripped|strips him|lost the handle|lost handle|loses the handle|fumbled|fumble|bobbled|bobble|dribbled off|dribbled out|dribble off his foot|tied up|held ball|jump ball", "Handling", "handle", null],
+      ["forced pass|forced it|rushed|panic|panicked|hurried|sped up|late clock|shot clock", "Rushed", "rushed", null],
+    ];
+    for (const [re, type, det, b] of toRules) {
+      if (take(st, re)) { isTO = true; if (!toType || type === "Rushed") toType = toType && type === "Rushed" ? "Rushed" : (toType || type); toDetail.push(det); if (b && !ball) ball = b }
+    }
+    const explicitTO = [["passing|bad read|pass", "Passing"], ["ball handling|handling|handle", "Handling"], ["violation", "Violation"]];
+    for (const [re, type] of explicitTO) if (take(st, re)) { isTO = isTO || /turnover|turn over|tov|giveaway|cough/.test(text); toType = type; }
+    if (take(st, "turnovers|turnover|turn over|turned it over|turns it over|cough up|coughs it up|coughed it up|giveaway|give away|gave it away|lost it|loses it|lost the ball|loses the ball|tov|t o")) isTO = true;
+    if (st.s.trim() === "to") { isTO = true; st.s = " " }
+    if (take(st, "live ball|live")) ball = "Live";
+    if (take(st, "dead ball|dead")) ball = "Dead";
+    if (isTO) {
+      // steal words in a turnover clause describe how it was lost
+      if (take(st, "steal|steals|stolen|stole|pick|picked|ripped")) { ball = ball || "Live"; if (!toType) toType = "Passing"; toDetail.push("stolen") }
+      if (!ball && toType === "Violation") ball = "Dead";
+      add("TO", { toType, ball, detail: toDetail.join(", ") || null });
+      if (!toType) warns.push("Turnover type not given");
+    }
+
+    // ---- shots ----
+    let sType = null, tier = null, val = null;
+    for (const t of SHOT_TYPES) { if (take(st, t.re)) { if (!sType) { sType = t.type; tier = t.tier; val = t.val } } }
+    for (const [re, tName] of TIERS) if (take(st, re)) tier = tName;
+    if (take(st, "3 pointer|3 point|3 ball|3s|3|trey|triple|from deep|from downtown|from 3|deep ball|bomb")) {
+      val = 3;
+      if (sType && sType !== "Catch & shoot 3" && sType !== "Off-dribble 3") {
+        if (sType === "Mid-range" && /pull ?up|step ?back/.test(text)) { sType = "Off-dribble 3"; tier = tier === "Red" ? "Red" : "Bronze" }
+        else { sType = null; if (tier === "Bronze" || tier === "Gold") tier = null }
+      }
+    }
+    if (take(st, "2 pointer|2 point|2|deuce")) { if (!val) val = 2 }
+    let made = null, andOne = false;
+    if (take(st, "and 1|and one|plus 1|plus the foul")) { made = true; andOne = true }
+    // blocked: a miss for a shooter, a block otherwise
+    const hasShot = !!(sType || val || ft || tier);
+    if (/ blocked /.test(st.s)) {
+      if (hasShot) { take(st, "blocked|gets blocked|got blocked"); made = false }
+    }
+    if (take(st, "no good|not good|misses|missed|miss|brick|bricks|bricked|rims out|rimmed out|rimmed|in and out|off the rim|front rim|back iron|airball|air ball|short|long|clanks|clanked|no")) made = made === true ? true : false;
+    if (take(st, "makes|made|make|good|bucket|basket|scores|scored|score|hits|hit|drains|drained|cash|cashes|splash|splashes|nails|nailed|buries|buried|finishes|finish|count it|money|swish|wet|converts|knocks it down|knocks down")) { if (made === null) made = true }
+
+    if (ft) {
+      let m = ft.m, a = ft.a;
+      if (a == null) { a = ft.both ? 2 : 1; m = made === false ? 0 : made === true ? a : null }
+      if (m == null) warns.push("Free throw: say make or miss");
+      else { for (let i = 0; i < m; i++) add("FM"); for (let i = 0; i < a - m; i++) add("FX") }
+    } else if (sType || val || tier || made !== null) {
+      if (made === null) warns.push("Shot: say make or miss");
+      else {
+        if (!val) { val = 2; if (!sType) notes.push("Booked as a two") }
+        add(val === 3 ? (made ? "3M" : "3X") : (made ? "2M" : "2X"), { tier: tier || null, stype: sType || null });
+        if (!tier) notes.push("Shot not graded");
+      }
+      if (andOne) notes.push("And-one: call the free throw separately");
+    }
+
+    // ---- rebounds ----
+    if (take(st, "offensive rebounds|offensive rebound|offensive boards|offensive board|o board|o boards|oboard|o reb|oreb|off board|offensive reb|o rebound|crashes|crashed")) add("OR");
+    if (take(st, "defensive rebounds|defensive rebound|defensive boards|defensive board|d board|d boards|dboard|d reb|dreb|def board|d rebound|defensive reb")) add("DR");
+    if (take(st, "rebounds|rebound|boards|board|carom|grabs it|ties it up")) { add("DR"); notes.push("“Rebound” booked as defensive") }
+
+    // ---- assists, steals, blocks, tips ----
+    if (take(st, "with the assist|on the assist|assists|assisted|assist|dimes|dime|helper|dished|dish|feed|found him|kicks it to|kick out")) add("AS");
+    if (take(st, "steals|steal|stole|pickpocket|pick pocket|picked his pocket|takeaway|took it away|ripped|rips|strip")) add("ST");
+    if (take(st, "blocks|blocked shot|block|blocked|rejection|rejected|rejects|swats|swatted|swat|stuffs|stuffed|stuff|sent it back")) add("BK");
+    if (take(st, "tipped|tips|tip|deflections|deflection|deflected|deflects|deflect|got a hand on it|poke|poked|pokes")) add("TP");
+
+    // ---- fouls ----
+    if (take(st, "gets fouled|got fouled|was fouled|is fouled|fouled by|draws a foul|drew a foul|draws the foul|drew the foul")) notes.push("Fouls drawn are not tracked");
+    const nf = count(st, "fouls|foul|fouled|reach in|reaches|reach|hack|personal|pf");
+    for (let i = 0; i < nf; i++) add("PF");
+
+    // leftover words worth surfacing
+    const left = st.s.replace(/\u0001\d+/g, " ").split(" ").filter(w => w && !STOP.has(w) && !/^\d+$/.test(w) && w.length > 2 && !/^(with|the|his|her|on|and|then|for|guy|man|nice|great|good|big|little|ball|play|plays|shot|shoots|goes|going|gets|got|takes|takes|ball|again|just|so|really|very|now|okay|ok|um|uh|like|from|into|over|under|top|key|lane|corner|wing|left|right|side|hand|handed|floor|court|first|second|third|fourth|quarter)$/.test(w));
+    if (left.length) notes.push("Ignored: " + left.join(" "));
+    return { items, notes, warns };
+  }
+
+  // ---------- squad words ----------
+  function findSquad(str, squads) {
+    for (const sq of squads || []) {
+      const k = normalize(sq).trim();
+      if (!k) continue;
+      const re = new RegExp("(?<= )" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?: team| squad)?(?= )");
+      if (re.test(str)) return { sq, str: str.replace(re, " ") };
+    }
+    return { sq: null, str };
+  }
+
+  // ---------- commands ----------
+  function command(raw) {
+    const s = normalize(raw).trim();
+    if (/^(undo|undo that|undo last|scratch that|scratch|cancel|cancel that|delete last|delete that|never mind|nevermind)$/.test(s)) return { cmd: "undo" };
+    if (/^(play|play film|play video|resume|go|roll|roll it|start film|play it)$/.test(s)) return { cmd: "play" };
+    if (/^(pause|pause film|pause video|stop|stop film|hold|hold on|wait)$/.test(s)) return { cmd: "pause" };
+    let m = s.match(/^(?:rewind|back|go back|skip back) (\d{1,3})(?: seconds?)?$/); if (m) return { cmd: "seek", d: -(+m[1]) };
+    m = s.match(/^(?:forward|skip|skip ahead|ahead|fast forward) (\d{1,3})(?: seconds?)?$/); if (m) return { cmd: "seek", d: +m[1] };
+    m = s.match(/^(?:(first|1st|second|2nd|third|3rd|fourth|4th|1|2|3|4) quarter|quarter (1|2|3|4)|q ?(1|2|3|4))$/);
+    if (m) { const v = m[1] || m[2] || m[3]; return { cmd: "period", p: "Q" + (ORD[v] || v) } }
+    m = s.match(/^(first|1st|second|2nd|1|2) half$/); if (m) return { cmd: "period", p: "H" + (ORD[m[1]] || m[1]) };
+    if (/^(overtime|ot|over time)$/.test(s)) return { cmd: "period", p: "OT" };
+    return null;
+  }
+
+  // ---------- main ----------
+  function parseCall(raw, ctx) {
+    const ix = ctx.index || buildIndex(ctx.roster || []);
+    let str = normalize(raw);
+    const { str: s2, marks } = extractTimes(str);
+    str = s2;
+    // split into plays: explicit separators, then time markers
+    let chunks = str.split(/ (?:then|and then|next|next play|also) |[;\n]/).map(c => " " + c.trim() + " ").filter(c => c.trim());
+    const plays = [];
+    for (const ch of chunks) {
+      const mk = [...ch.matchAll(/\u0001(\d+)/g)];
+      if (mk.length <= 1) { plays.push(ch); continue }
+      const leading = ch.trim().startsWith("\u0001");
+      const parts = [];
+      if (leading) {
+        let last = 0; for (let k = 1; k < mk.length; k++) { parts.push(ch.slice(last, mk[k].index)); last = mk[k].index } parts.push(ch.slice(last));
+      } else {
+        let last = 0; for (const m of mk) { const end = m.index + m[0].length; parts.push(ch.slice(last, end)); last = end } if (ch.slice(last).trim()) parts.push(ch.slice(last));
+      }
+      for (const p of parts) if (p.trim()) plays.push(" " + p.trim() + " ");
+    }
+    let lastSq = null;
+    return plays.map(ch => { const p = parseOne(ch, marks, ix, ctx, raw); if (p.squad) lastSq = p.squad; else p.squad = lastSq; return p }).filter(p => p.items.length || p.warns.length);
+  }
+
+  function parseOne(ch, marks, ix, ctx, raw) {
+    let time = null;
+    ch = ch.replace(/\u0001(\d+)/g, (m, n) => { if (!time) time = marks[+n]; return " " });
+    const sq = findSquad(ch, ctx.squads); ch = sq.str;
+    const toks = ch.trim().split(/\s+/).filter(Boolean);
+    const mentions = findPlayers(toks, ix);
+    const items = [], notes = [], warns = [];
+    const playerOf = (m) => m.idx == null ? null : ix.byIdx[m.idx].name;
+    if (!mentions.length) {
+      const r = parseClause(toks.join(" "), {});
+      r.items.forEach(it => items.push(Object.assign({ p: null }, it)));
+      notes.push(...r.notes); warns.push(...r.warns);
+      if (r.items.length) warns.push("No player heard");
+    } else {
+      // clause i = words from mention i to mention i+1 (words before the first mention go to the first clause)
+      const clauses = mentions.map((m, k) => {
+        const from = k === 0 ? 0 : m.start; const to = k + 1 < mentions.length ? mentions[k + 1].start : toks.length;
+        const words = toks.slice(from, to).filter((_, j) => { const pos = from + j; return !(pos >= m.start && pos < m.end) });
+        return { m, words };
+      });
+      const MOVE = /(?:^| )(assisted by|assist by|assist from|assist|dime from|dime|feed from|from|blocked by|block by|stolen by|steal by|picked off by|picked by|by)$/;
+      for (let k = 0; k < clauses.length - 1; k++) {
+        const txt = clauses[k].words.join(" ");
+        const mm = txt.match(MOVE);
+        if (mm) {
+          // "blocked by" leaves "blocked" with the shooter as a miss
+          const keep = /^blocked by|^block by$/.test(mm[1]) ? " blocked" : (/^picked off by$|^stolen by$/.test(mm[1]) ? " stolen" : "");
+          clauses[k].words = (txt.slice(0, mm.index) + keep).trim().split(" ").filter(Boolean);
+          clauses[k + 1].moved = mm[1];
+        }
+      }
+      const results = clauses.map(c => parseClause(c.words.join(" "), { moved: c.moved }));
+      // "Ty assist Tarun layup make": an assist that landed on the shooter belongs to the player before him
+      results.forEach((r, k) => {
+        if (k > 0 && clauses[k].moved && /assist|dime|feed|from/.test(clauses[k].moved) &&
+            r.items.some(i => i.k === "2M" || i.k === "3M") && clauses[k].m.idx !== clauses[k - 1].m.idx && !/from|by/.test(clauses[k].moved)) {
+          const j = r.items.findIndex(i => i.k === "AS"); if (j >= 0) { r.items.splice(j, 1); if (!results[k - 1].items.some(i => i.k === "AS")) results[k - 1].items.push({ k: "AS" }) }
+        }
+      });
+      results.forEach((r, k) => {
+        const m = clauses[k].m;
+        const nm = playerOf(m);
+        r.items.forEach(it => items.push(Object.assign({ p: nm }, it)));
+        notes.push(...r.notes); warns.push(...r.warns);
+        if (m.idx == null && r.items.length) warns.push("Which player? " + (m.amb || []).map(i => ix.byIdx[i].name).join(" or "));
+        if (m.fuzzy) notes.push("Heard “" + toks[m.start] + "” as " + nm);
+      });
+      if (!items.length && !warns.length) warns.push("No stat heard");
+    }
+    // an assist needs a made basket by a teammate in the same play, unless it's said alone
+    return { time, squad: sq.sq, items, notes: [...new Set(notes)], warns: [...new Set(warns)], text: raw.trim() };
+  }
+
+  const api = { parseCall, buildIndex, normalize, command, extractTimes };
+  if (typeof module !== "undefined") module.exports = api; else root.CallParser = api;
+})(this);
+</script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmtT = v => { if (v == null || isNaN(v)) return "–"; v = Math.max(0, Math.round(v)); const h = Math.floor(v / 3600), m = Math.floor(v % 3600 / 60), s = v % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0") };
+const parseT = s => { s = String(s || "").trim(); if (!s) return null; const p = s.split(":"); if (p.some(x => !/^\d+$/.test(x)) || p.length > 3) return null; return p.reduce((t, x) => t * 60 + +x, 0) };
+const todayISO = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") };
+
+const ROSTER0 = ["Keane Marshall","Ariel Tsaiger","DJ Roberts","Jimmy Zaborniak","Joseph Thompson","Enrique Garcia","Faisal Shawwa","Michael Adarkwah Nti","Isaak Moore","Cole Koop","Gudmund Roething","Lamine Conde","Anthony Brady","Will Zylyk","Tarun Saroya","Simon Reid","Julian Malfair","Toby Adiese","Ty Lockwood","Larry Shyakasiga","Mathias Schertzer","Wisdom Sunday","Tylen Lewis","Mason Clerke","Dom Zaino","Parker Fleming","Kai Bohmert","Victor (VJ) Phillips"];
+const W0 = { steal: 3, charge: 3, tip: 1, pursuit: 2, you: 1, block: 1, wallup: 1, p6: 3, orebx: 3, pt: 2, rr: 1, up: 1, factor: 1 / 3 };
+const WLAB = [["steal","Steal (auto)"],["charge","Charge"],["tip","Tip / deflection"],["pursuit","Ball pursuit"],["you","YOU"],["block","Block (auto)"],["wallup","WallUp"],["p6","Paint touch in 6"],["orebx","Offensive rebound (auto)"],["pt","Paint touch"],["rr","Right read"],["up","Upcycle"],["factor","HVP adjustment factor"]];
+const PERIODS = ["Q1","Q2","Q3","Q4","OT"];
+const PLAB = { Q1: "1st qtr", Q2: "2nd qtr", Q3: "3rd qtr", Q4: "4th qtr", OT: "OT", H1: "1st half", H2: "2nd half" };
+const VLABELS = ["Full game","1st half","2nd half","Q1","Q2","Q3","Q4","OT","Segment"];
+const LABEL_PERIOD = { "Q1": "Q1", "Q2": "Q2", "Q3": "Q3", "Q4": "Q4", "OT": "OT", "1st half": "H1", "2nd half": "H2" };
+const KNAME = { "2M":"2PT make","2X":"2PT miss","3M":"3PT make","3X":"3PT miss","FM":"FT make","FX":"FT miss","OR":"Off. rebound","DR":"Def. rebound","AS":"Assist","ST":"Steal","BK":"Block","TO":"Turnover","PF":"Foul","CH":"Charge","TP":"Tip","PU":"Pursuit","YO":"YOU","WU":"WallUp","P6":"Paint touch in 6","PT":"Paint touch","RR":"Right read","UP":"Upcycle" };
+const KCLS = { "2M":"mk","3M":"mk","FM":"mk","2X":"ms","3X":"ms","FX":"ms","CH":"hv","TP":"hv","PU":"hv","YO":"hv","WU":"hv","P6":"hv","PT":"hv","RR":"hv","UP":"hv","TO":"to" };
+
+/* ---------- state ---------- */
+const KEY = "heat-film-caller-v1";
+let S = load();
+function load() {
+  let s = null; try { s = JSON.parse(localStorage.getItem(KEY) || "null") } catch (e) {}
+  s = s || {};
+  s.roster = Array.isArray(s.roster) && s.roster.length ? s.roster : ROSTER0.map(n => ({ name: n, num: "", alias: "" }));
+  s.weights = Object.assign({}, W0, s.weights || {});
+  s.leadIn = s.leadIn ?? 5; s.lang = s.lang || "en-CA";
+  s.squads = Array.isArray(s.squads) && s.squads.length ? s.squads : ["White", "Black", "Blue"];
+  s.sessions = Array.isArray(s.sessions) ? s.sessions : [];
+  if (!s.sessions.some(x => x.id === s.cur)) s.cur = s.sessions[0] ? s.sessions[0].id : null;
+  return s;
+}
+let saveT = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) { toast("Couldn't save in this browser.") } }, 120) }
+const cur = () => S.sessions.find(x => x.id === S.cur) || null;
+let index = null;
+function reindex() { index = CallParser.buildIndex(S.roster) }
+reindex();
+
+/* ---------- toast ---------- */
+let tT = null;
+function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => t.hidden = true, 2600) }
+
+/* ===================== VIDEO ===================== */
+const V = { mode: "none", yt: null, ytReady: false, ytFailed: false, vid: null, manual: 0, localUrl: null, localName: null };
+function ytId(url) {
+  try {
+    const u = new URL(url.trim());
+    if (/youtu\.be$/.test(u.hostname)) return u.pathname.slice(1).split("/")[0];
+    if (/youtube\.com$/.test(u.hostname.replace(/^www\.|^m\./, ""))) {
+      if (u.searchParams.get("v")) return u.searchParams.get("v");
+      const m = u.pathname.match(/\/(?:live|embed|shorts|v)\/([^/?]+)/); if (m) return m[1];
+    }
+  } catch (e) {}
+  return null;
+}
+function ytLink(url, t) { const id = ytId(url); return id ? "https://www.youtube.com/watch?v=" + encodeURIComponent(id) + "&t=" + Math.max(0, Math.floor(t)) + "s" : null }
+function ytStart(url) { try { const t = new URL(url).searchParams.get("t"); if (!t) return 0; const m = t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?/); return (+(m[1] || 0)) * 3600 + (+(m[2] || 0)) * 60 + (+(m[3] || 0)) } catch (e) { return 0 } }
+function loadYT() {
+  if (window.YT && window.YT.Player) { V.ytReady = true; return }
+  window.onYouTubeIframeAPIReady = () => { V.ytReady = true; if (V.pending) { const p = V.pending; V.pending = null; showVideo(p) } };
+  const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api";
+  sc.onerror = () => { V.ytFailed = true; renderVideoArea() };
+  document.head.appendChild(sc);
+  setTimeout(() => { if (!V.ytReady) { V.ytFailed = true; renderVideoArea() } }, 8000);
+}
+loadYT();
+function currentVideo() { const s = cur(); if (!s) return null; return (s.videos || []).find(v => v.id === s.curVid) || null }
+function showVideo(v) {
+  $("vidEmpty").hidden = true; $("ytMsg").hidden = true;
+  if (v && v.id === "local") { useLocal(); return }
+  $("localVid").hidden = true; try { $("localVid").pause() } catch (e) {}
+  const id = v && ytId(v.url);
+  if (!v || !id) { V.mode = "manual"; renderVideoArea(); return }
+  if (!V.ytReady) { if (V.ytFailed) { V.mode = "manual"; renderVideoArea(); return } V.pending = v; V.mode = "loading"; renderVideoArea(); return }
+  V.mode = "yt"; $("ytHost").hidden = false;
+  if (V.yt && V.ytVid === v.id) return;
+  if (V.yt) { V.yt.cueVideoById({ videoId: id, startSeconds: ytStart(v.url) }); V.ytVid = v.id; return }
+  V.yt = new YT.Player("ytHost", {
+    videoId: id, playerVars: { rel: 0, modestbranding: 1, playsinline: 1, start: ytStart(v.url) },
+    events: {
+      onReady: () => { V.ytOk = true; V.yt.setPlaybackRate(+$("rate").value || 1) },
+      onStateChange: () => updatePlayBtn(),
+      onError: (e) => {
+        const m = $("ytMsg"); m.hidden = false;
+        m.textContent = (e.data === 150 || e.data === 101 || e.data === 153 || e.data === 152)
+          ? (location.protocol === "file:" ? "YouTube only plays inside the app when the app is opened from a web address, not as a file from your computer (error " + e.data + "). Open the hosted link, or run it from localhost." : "The owner of this video doesn't allow it to play inside other sites (error " + e.data + "). Try another link, or use a video file.")
+          : "YouTube couldn't play this video (error " + e.data + "). Check the link, or use a video file.";
+      }
+    }
+  });
+  V.ytVid = v.id;
+}
+function useLocal() {
+  if (!V.localUrl) { V.mode = "manual"; renderVideoArea(); return }
+  V.mode = "local"; $("ytHost").hidden = true; if (V.yt) try { V.yt.pauseVideo() } catch (e) {}
+  const el = $("localVid"); el.hidden = false; if (el.src !== V.localUrl) el.src = V.localUrl; el.playbackRate = +$("rate").value || 1;
+}
+function renderVideoArea() {
+  const v = currentVideo();
+  const e = $("vidEmpty");
+  if (V.mode === "yt" || V.mode === "local") { e.hidden = true; return }
+  $("ytHost").hidden = true; $("localVid").hidden = true; e.hidden = false;
+  if (V.mode === "loading") { e.innerHTML = `<span class="label">Loading YouTube…</span>`; return }
+  const why = !v ? "No video for this session yet." : (V.ytFailed ? "The YouTube player couldn't load on this page." : "This link isn't a YouTube video.");
+  e.innerHTML = `<span class="label">${esc(why)}</span><span>Add a link under Sessions, or use a video file. You can still call plays; set the video time here and each call is stamped with it.</span><input id="manualT" placeholder="mm:ss" value="${fmtT(V.manual)}" style="width:120px;text-align:center;font:700 22px var(--display)">`;
+}
+function now() {
+  try {
+    if (V.mode === "yt" && V.yt && V.yt.getCurrentTime) return V.yt.getCurrentTime() || 0;
+    if (V.mode === "local") return $("localVid").currentTime || 0;
+  } catch (e) {}
+  const m = $("manualT"); if (m) { const t = parseT(m.value); if (t != null) V.manual = t }
+  return V.manual;
+}
+function isPlaying() { try { if (V.mode === "yt") return V.yt.getPlayerState() === 1; if (V.mode === "local") return !$("localVid").paused } catch (e) {} return false }
+function play() { try { if (V.mode === "yt") V.yt.playVideo(); else if (V.mode === "local") $("localVid").play() } catch (e) {} setTimeout(updatePlayBtn, 150) }
+function pause() { try { if (V.mode === "yt") V.yt.pauseVideo(); else if (V.mode === "local") $("localVid").pause() } catch (e) {} setTimeout(updatePlayBtn, 150) }
+function seekTo(t) { t = Math.max(0, t); try { if (V.mode === "yt") V.yt.seekTo(t, true); else if (V.mode === "local") $("localVid").currentTime = t; else { V.manual = t; const m = $("manualT"); if (m) m.value = fmtT(t) } } catch (e) {} tick() }
+function updatePlayBtn() { $("playBtn").textContent = isPlaying() ? "❚❚" : "▶" }
+function tick() { const c = $("clock"); if (c) c.textContent = fmtT(now()) }
+setInterval(() => { if (view === "call") { tick(); updatePlayBtn() } }, 250);
+$("localVid").addEventListener("play", updatePlayBtn); $("localVid").addEventListener("pause", updatePlayBtn);
+$("rate").addEventListener("change", () => { const r = +$("rate").value; try { if (V.mode === "yt") V.yt.setPlaybackRate(r); else if (V.mode === "local") $("localVid").playbackRate = r } catch (e) {} });
+$("fileIn").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (V.localUrl) URL.revokeObjectURL(V.localUrl);
+  V.localUrl = URL.createObjectURL(f); V.localName = f.name;
+  const s = cur(); if (s) { s.curVid = "local"; save() }
+  showVideo({ id: "local" }); renderCall(); toast("Playing " + f.name + ". Video files aren't saved; pick it again next time.");
+});
+
+/* ===================== SPEECH ===================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, uttStart = null;
+function startMic() {
+  if (!SR) { toast("Voice needs Chrome or Edge on a computer. You can still type calls."); return }
+  rec = new SR(); rec.continuous = true; rec.interimResults = true; rec.lang = S.lang; rec.maxAlternatives = 1;
+  rec.onresult = (e) => {
+    let interim = "", fin = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) fin += r[0].transcript + " "; else interim += r[0].transcript + " " }
+    if (uttStart == null && (interim || fin)) uttStart = now();
+    $("heard").textContent = (fin || interim).trim() ? "Heard: " + (fin || interim).trim() : $("heard").textContent;
+    if (fin.trim()) { const t = uttStart ?? now(); uttStart = null; handleCall(fin.trim(), t, "voice") }
+  };
+  rec.onerror = (e) => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") { listening = false; micUI(); toast("The browser blocked the microphone. Allow it in the address bar and try again.") }
+  };
+  rec.onend = () => { if (listening) setTimeout(() => { try { rec.start() } catch (e) {} }, 200) };
+  try { rec.start(); listening = true } catch (e) { listening = false }
+  micUI();
+}
+function stopMic() { listening = false; try { rec && rec.stop() } catch (e) {} uttStart = null; micUI() }
+function micUI() {
+  const b = $("micBtn"); b.classList.toggle("on", listening); b.setAttribute("aria-label", listening ? "Stop listening" : "Start listening");
+  if (listening) $("heard").textContent = "Listening…";
+}
+if (!SR) { $("micBtn").title = "Voice needs Chrome or Edge on a computer"; $("micBtn").style.opacity = .5 }
+
+/* ===================== CALLS ===================== */
+let typedStart = null, lastBatch = null;
+function ctx() { const s = cur(); return { index, roster: S.roster, squads: s && s.type === "Scrimmage" ? S.squads : [] } }
+function curPeriod() { const s = cur(); const v = currentVideo(); if (v && LABEL_PERIOD[v.label]) return LABEL_PERIOD[v.label]; return (s && s.period) || "Q1" }
+function handleCall(text, t0, source) {
+  const s = cur(); if (!s) { toast("Create a session first."); return }
+  const c = CallParser.command(text);
+  if (c) {
+    if (c.cmd === "undo") undo();
+    else if (c.cmd === "play") play();
+    else if (c.cmd === "pause") pause();
+    else if (c.cmd === "seek") seekTo(now() + c.d);
+    else if (c.cmd === "period") { s.period = c.p; save(); renderCall(); toast("Period: " + (PLAB[c.p] || c.p)) }
+    return;
+  }
+  const plays = CallParser.parseCall(text, ctx());
+  if (!plays.length) { showResult(null, text); return }
+  const v = currentVideo();
+  const made = plays.map(p => {
+    let t = t0;
+    if (p.time && p.time.abs != null) t = p.time.abs; else if (p.time && p.time.rel != null) t = Math.max(0, t0 + p.time.rel);
+    return { id: uid("p"), vid: v ? v.id : null, period: curPeriod(), t: Math.round(t), squad: p.squad, text: p.text, items: p.items, notes: p.notes, warns: p.warns, ts: Date.now(), src: source };
+  });
+  s.plays.push(...made); save();
+  lastBatch = made.map(p => p.id);
+  const explicit = plays.map((p, i) => p.time ? made[i].t : null).filter(t => t != null);
+  if (explicit.length && V.mode === "manual") { V.manual = Math.max(...explicit); const m = $("manualT"); if (m) m.value = fmtT(V.manual) }
+  showResult(made, text); renderPBP(); renderTally();
+}
+function undo() {
+  const s = cur(); if (!s || !s.plays.length) return;
+  let ids = lastBatch && lastBatch.every(id => s.plays.some(p => p.id === id)) ? lastBatch : [s.plays.slice().sort((a, b) => b.ts - a.ts)[0].id];
+  s.plays = s.plays.filter(p => !ids.includes(p.id)); lastBatch = null; save();
+  $("lastResult").innerHTML = ""; renderPBP(); renderTally(); toast(ids.length > 1 ? "Removed the last " + ids.length + " plays." : "Removed the last play.");
+}
+function itemTag(it, showName = true) {
+  const tier = it.tier ? `<span class="tier t-${it.tier}" title="${esc(it.tier)}"></span>` : "";
+  let extra = [];
+  if (it.stype) extra.push(it.stype);
+  if (it.k === "TO") { if (it.toType) extra.push(it.toType); if (it.ball) extra.push(it.ball) }
+  return `<span class="tag ${KCLS[it.k] || ""}">${tier}${showName ? `<span class="pn">${esc(it.p ? short(it.p) : "?")}</span>` : ""}<span class="st">${esc(KNAME[it.k] || it.k)}${extra.length ? " · " + esc(extra.join(" · ")) : ""}</span></span>`;
+}
+function short(n) { const p = n.replace(/\(.*?\)/g, "").trim().split(/\s+/); return p.length > 1 ? p[0] + " " + p[p.length - 1][0] + "." : n }
+function showResult(made, text) {
+  const el = $("lastResult");
+  if (!made) { el.innerHTML = `<div class="result"><span class="warn">No stat heard in “${esc(text)}”.</span><span class="small">Say the player and what happened, for example “Tarun steal” or “Ty three make”. See How to call.</span></div>`; return }
+  el.innerHTML = `<div class="result flash"><div class="row between"><span class="label">Booked</span><button class="btn ghost" data-act="undo" style="min-height:30px">Undo</button></div>` +
+    made.map(p => `<div class="row"><span class="tlink" style="text-decoration:none">${fmtT(p.t)}</span>${p.items.map(i => itemTag(i)).join("")}${p.warns.map(w => `<span class="warn">${esc(w)}</span>`).join("")}</div>${p.notes.length ? `<div class="small">${esc(p.notes.join(" · "))}</div>` : ""}`).join("") + `</div>`;
+  setTimeout(() => { const r = el.querySelector(".result"); if (r) r.classList.remove("flash") }, 900);
+}
+function renderPreview() {
+  const v = $("callIn").value.trim(); const el = $("preview");
+  if (!v) { el.innerHTML = ""; return }
+  const c = CallParser.command(v);
+  if (c) { el.innerHTML = `<span class="small">Command: ${esc(c.cmd)}${c.p ? " " + c.p : ""}${c.d ? " " + c.d + "s" : ""}</span>`; return }
+  const plays = CallParser.parseCall(v, ctx());
+  el.innerHTML = plays.length ? plays.map(p => `${p.time ? `<span class="small">${p.time.abs != null ? "at " + fmtT(p.time.abs) : (p.time.rel + "s")}</span>` : ""}${p.items.map(i => itemTag(i)).join("")}${p.warns.map(w => `<span class="warn">${esc(w)}</span>`).join("")}`).join(`<span class="small">·</span>`) : `<span class="small">Nothing recognized yet</span>`;
+}
+$("callIn").addEventListener("input", () => { if ($("callIn").value.trim() && typedStart == null) typedStart = now(); if (!$("callIn").value.trim()) typedStart = null; renderPreview() });
+$("callIn").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); bookTyped() }
+  if (e.key === "Escape") { $("callIn").blur() }
+});
+function bookTyped() { const v = $("callIn").value.trim(); if (!v) return; handleCall(v, typedStart ?? now(), "typed"); $("callIn").value = ""; typedStart = null; renderPreview() }
+
+/* ===================== PLAY-BY-PLAY ===================== */
+let armed = null, armT = null, editing = null;
+function renderPBP() {
+  const s = cur(); if (!s) return;
+  const list = s.plays.slice().sort((a, b) => (b.ts - a.ts));
+  $("pbpCount").textContent = s.plays.length + " plays";
+  const vids = Object.fromEntries((s.videos || []).map(v => [v.id, v]));
+  $("pbp").innerHTML = list.length ? list.map(p => {
+    const yl = p.vid && vids[p.vid] ? ytLink(vids[p.vid].url, p.t - S.leadIn) : null;
+    const canSeek = !!yl || (p.vid === "local" && V.localUrl);
+    const vl = p.vid && vids[p.vid] ? vids[p.vid].label : (p.vid === "local" ? "File" : "");
+    const unresolved = p.items.some(i => !i.p);
+    if (editing === p.id) return `<div class="play"><div class="tm"><span class="tlink" style="text-decoration:none">${fmtT(p.t)}</span></div><div class="bd"><input id="editIn" value="${esc(p.text)}" style="width:100%"><span class="small">Enter saves · Esc cancels · a new time in the text replaces ${fmtT(p.t)}</span></div><div class="acts"><button class="ib" data-act="edit-save" data-id="${p.id}">Save</button></div></div>`;
+    return `<div class="play ${p.warns.length ? "warned" : ""}">
+      <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}<span class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
+      <div class="bd"><div class="row" style="gap:5px">${p.squad || sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(p.squad || sqOfPlay(p))}" title="${esc(p.squad || sqOfPlay(p))}"></span>` : ""}${p.items.map(i => itemTag(i)).join("")}</div>
+        ${p.warns.length ? `<div class="warn">${esc(p.warns.join(" · "))}</div>` : ""}
+        ${unresolved ? `<div class="row"><span class="small">Give it to</span><select data-act="assign" data-id="${p.id}"><option value="">Choose player</option>${S.roster.filter(r => r.name).map(r => `<option>${esc(r.name)}</option>`).join("")}</select></div>` : ""}
+        <div class="tx">“${esc(p.text)}”</div></div>
+      <div class="acts"><button class="ib" data-act="edit" data-id="${p.id}" title="Edit">Edit</button><button class="ib ${armed === p.id ? "armed" : ""}" data-act="del" data-id="${p.id}" title="Delete">${armed === p.id ? "Delete" : "✕"}</button></div>
+    </div>`;
+  }).join("") : `<div style="padding:16px 14px" class="note">No plays yet. Press the mic or type a call.</div>`;
+  if (editing) { const e = $("editIn"); if (e) { e.focus(); e.setSelectionRange(e.value.length, e.value.length) } }
+}
+function sqOfPlay(p) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; const pl = p.items.find(i => i.p); return pl ? (s.squadOf || {})[pl.p] || null : null }
+function sqColor(n) { const k = String(n || "").toLowerCase(); return k === "white" ? "var(--j-white)" : k === "black" ? "var(--j-black)" : k === "blue" ? "var(--j-blue)" : "var(--j-other)" }
+function jump(p) {
+  const s = cur(); if (!s) return;
+  if (p.vid && p.vid !== s.curVid) { s.curVid = p.vid; save(); renderCall(); const v = currentVideo(); if (v || p.vid === "local") showVideo(v || { id: "local" }) }
+  const go = () => { seekTo(p.t - S.leadIn); play() };
+  if (V.mode === "yt" && !V.ytOk) setTimeout(go, 900); else go();
+}
+function saveEdit(id) {
+  const s = cur(); const p = s.plays.find(x => x.id === id); const v = $("editIn").value.trim();
+  if (!p) return; if (!v) { editing = null; renderPBP(); return }
+  const res = CallParser.parseCall(v, ctx());
+  if (!res.length) { toast("No stat heard in that call."); return }
+  const r = res[0];
+  let t = p.t; if (r.time && r.time.abs != null) t = r.time.abs; else if (r.time && r.time.rel != null) t = Math.max(0, p.t + r.time.rel);
+  Object.assign(p, { text: v, items: r.items, notes: r.notes, warns: r.warns, squad: r.squad, t: Math.round(t) });
+  const extra = res.slice(1).map(q => ({ id: uid("p"), vid: p.vid, period: p.period, t: Math.round(q.time && q.time.abs != null ? q.time.abs : p.t), squad: q.squad, text: q.text, items: q.items, notes: q.notes, warns: q.warns, ts: p.ts + 1, src: "edit" }));
+  s.plays.push(...extra);
+  editing = null; save(); renderPBP(); renderTally(); toast("Play updated.");
+}
+
+/* ===================== TALLIES ===================== */
+let sqFilter = "All";
+function blank() { return { fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0,or:0,dr:0,ast:0,stl:0,blk:0,to:0,pf:0, ch:0,tp:0,pu:0,yo:0,wu:0,p6:0,pt:0,rr:0,up:0, pa:0,ha:0,vi:0,ru:0,live:0,dead:0, gm:0,ga:0,sm:0,sa:0,bm:0,ba:0,rm:0,ra:0, n:0 } }
+function addItem(L, it) {
+  L.n++;
+  const shot = (m, three) => { L.fga++; if (m) L.fgm++; if (three) { L.tpa++; if (m) L.tpm++ }
+    const t = it.tier; if (t === "Gold") { L.ga++; if (m) L.gm++ } else if (t === "Silver") { L.sa++; if (m) L.sm++ } else if (t === "Bronze") { L.ba++; if (m) L.bm++ } else if (t === "Red") { L.ra++; if (m) L.rm++ } };
+  switch (it.k) {
+    case "2M": shot(true, false); break; case "2X": shot(false, false); break;
+    case "3M": shot(true, true); break; case "3X": shot(false, true); break;
+    case "FM": L.ftm++; L.fta++; break; case "FX": L.fta++; break;
+    case "OR": L.or++; break; case "DR": L.dr++; break; case "AS": L.ast++; break; case "ST": L.stl++; break; case "BK": L.blk++; break; case "PF": L.pf++; break;
+    case "TO": L.to++; if (it.toType === "Passing") L.pa++; else if (it.toType === "Handling") L.ha++; else if (it.toType === "Violation") L.vi++; else if (it.toType === "Rushed") L.ru++;
+      if (it.ball === "Live") L.live++; else if (it.ball === "Dead") L.dead++; break;
+    case "CH": L.ch++; break; case "TP": L.tp++; break; case "PU": L.pu++; break; case "YO": L.yo++; break; case "WU": L.wu++; break;
+    case "P6": L.p6++; break; case "PT": L.pt++; break; case "RR": L.rr++; break; case "UP": L.up++; break;
+  }
+}
+function finish(L) {
+  const w = S.weights;
+  L.pts = 2 * (L.fgm - L.tpm) + 3 * L.tpm + L.ftm; L.reb = L.or + L.dr;
+  L.eff = L.pts + L.reb + L.ast + L.stl + L.blk - (L.fga - L.fgm) - (L.fta - L.ftm) - L.to;
+  L.def = L.stl * w.steal + L.ch * w.charge + L.tp * w.tip + L.pu * w.pursuit + L.yo * w.you + L.blk * w.block + L.wu * w.wallup;
+  L.off = L.p6 * w.p6 + L.or * w.orebx + L.pt * w.pt + L.rr * w.rr + L.up * w.up;
+  L.raw = L.def + L.off; L.adj = L.raw * w.factor; L.cmb = L.eff + L.adj;
+  L.untyped = L.to - L.pa - L.ha - L.vi - L.ru; L.lu = L.to - L.live - L.dead;
+  L.ng = L.fga - L.ga - L.sa - L.ba - L.ra;
+  return L;
+}
+function itemSquad(p, it) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; return p.squad || (s.squadOf || {})[it.p] || null }
+function tallies() {
+  const s = cur(); const by = {}, sq = {}, tot = blank();
+  for (const p of s.plays) for (const it of p.items) {
+    const q = itemSquad(p, it);
+    if (sqFilter !== "All" && q !== sqFilter) continue;
+    if (it.p) { (by[it.p] = by[it.p] || { L: blank(), sq: q }).L && addItem(by[it.p].L, it); if (q) by[it.p].sq = q }
+    addItem(tot, it);
+    if (q) addItem(sq[q] = sq[q] || blank(), it);
+  }
+  const order = S.roster.map(r => r.name);
+  const names = Object.keys(by).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) });
+  return { rows: names.map(n => ({ name: n, sq: by[n].sq, L: finish(by[n].L) })), sq: Object.entries(sq).map(([k, L]) => ({ name: k, L: finish(L) })), tot: finish(tot) };
+}
+const pct = (m, a) => a ? (m / a * 100).toFixed(1) : "–";
+const n1 = v => (Math.round(v * 10) / 10).toFixed(1);
+const COLS = {
+  box: [["PTS", L => L.pts, "hl"], ["FG", L => L.fgm + "-" + L.fga], ["FG%", L => pct(L.fgm, L.fga)], ["3P", L => L.tpm + "-" + L.tpa], ["3P%", L => pct(L.tpm, L.tpa)], ["FT", L => L.ftm + "-" + L.fta], ["FT%", L => pct(L.ftm, L.fta)],
+        ["OREB", L => L.or], ["DREB", L => L.dr], ["REB", L => L.reb], ["AST", L => L.ast], ["STL", L => L.stl], ["BLK", L => L.blk], ["TOV", L => L.to], ["PF", L => L.pf], ["EFF", L => L.eff, "hl"]],
+  hvp: [["Steal", L => L.stl], ["Charge", L => L.ch], ["Tip", L => L.tp], ["Pursuit", L => L.pu], ["YOU", L => L.yo], ["Block", L => L.blk], ["WallUp", L => L.wu], ["Def HVP", L => L.def, "hl"],
+        ["Paint 6", L => L.p6], ["O-board", L => L.or], ["Paint touch", L => L.pt], ["Right read", L => L.rr], ["Upcycle", L => L.up], ["Off HVP", L => L.off, "hl"],
+        ["Raw HVP", L => L.raw], ["Adj HVP", L => n1(L.adj)], ["EFF", L => L.eff], ["Combined", L => n1(L.cmb), "hl"]],
+  to: [["TOV", L => L.to, "hl"], ["Passing", L => L.pa], ["Handling", L => L.ha], ["Violation", L => L.vi], ["Rushed", L => L.ru], ["Type not said", L => L.untyped], ["Live", L => L.live], ["Dead", L => L.dead], ["Live/dead not said", L => L.lu], ["Live %", L => pct(L.live, L.to)]],
+  shot: [["FGA", L => L.fga, "hl"], ["Gold", L => L.gm + "-" + L.ga], ["Gold %", L => pct(L.gm, L.ga)], ["Silver", L => L.sm + "-" + L.sa], ["Silver %", L => pct(L.sm, L.sa)], ["Bronze", L => L.bm + "-" + L.ba], ["Bronze %", L => pct(L.bm, L.ba)], ["Red", L => L.rm + "-" + L.ra], ["Red %", L => pct(L.rm, L.ra)], ["Not graded", L => L.ng],
+         ["Gold + Silver share", L => pct(L.ga + L.sa, L.ga + L.sa + L.ba + L.ra)]],
+};
+const NOTES = {
+  box: "PTS = 2 × two-point makes + 3 × three-point makes + free-throw makes. EFF = PTS + REB + AST + STL + BLK − missed field goals − missed free throws − TOV.",
+  hvp: () => `Def HVP = Steal×${S.weights.steal} + Charge×${S.weights.charge} + Tip×${S.weights.tip} + Pursuit×${S.weights.pursuit} + YOU×${S.weights.you} + Block×${S.weights.block} + WallUp×${S.weights.wallup}. Off HVP = Paint 6×${S.weights.p6} + O-board×${S.weights.orebx} + Paint touch×${S.weights.pt} + Right read×${S.weights.rr} + Upcycle×${S.weights.up}. Adj HVP = Raw × ${(+S.weights.factor).toFixed(4)}. Combined = EFF + Adj HVP.`,
+  to: "Turnover type and live or dead come from the call. “Not said” columns show what still needs classifying.",
+  shot: "Field goals only. Gold: at the rim. Silver: catch-and-shoot threes. Bronze: mid-range, off-the-dribble threes, floaters. Red: shots we don't want.",
+};
+const SECTIONS = [["box", "Box score"], ["hvp", "HVP"], ["to", "Turnovers"], ["shot", "Shot quality"]];
+function renderTally() {
+  const s = cur(); if (!s) return;
+  const scr = s.type === "Scrimmage";
+  if (!scr) sqFilter = "All";
+  $("sqFilter").innerHTML = scr ? ["All", ...S.squads].map(q => `<button class="chip" data-sq="${esc(q)}" aria-pressed="${sqFilter === q}">${q !== "All" ? `<span class="sw" style="background:${sqColor(q)}"></span> ` : ""}${esc(q)}</button>`).join("") : "";
+  const T = tallies();
+  const td = (v, cls) => `<td class="${cls || ""} ${v === 0 || v === "0-0" || v === "–" || v === "0.0" ? "z" : ""}">${esc(v)}</td>`;
+  $("tallies").innerHTML = SECTIONS.map(([key, title]) => {
+    const cols = COLS[key];
+    let h = `<thead><tr><th class="l">Player</th>${scr ? "<th>Squad</th>" : ""}${cols.map(c => `<th>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>`;
+    h += T.rows.length ? T.rows.map(r => `<tr><td class="l">${esc(r.name)}</td>${scr ? `<td>${r.sq ? `<span class="sw" style="background:${sqColor(r.sq)}"></span>` : ""}</td>` : ""}${cols.map(c => td(c[1](r.L), c[2])).join("")}</tr>`).join("")
+      : `<tr><td class="l" colspan="${cols.length + 2}" style="color:var(--muted);font-weight:500">No plays yet${sqFilter !== "All" ? " for " + esc(sqFilter) : ""}.</td></tr>`;
+    if (scr && sqFilter === "All") h += T.sq.map(q => `<tr class="sq"><td class="l">${esc(q.name)} total</td><td><span class="sw" style="background:${sqColor(q.name)}"></span></td>${cols.map(c => td(c[1](q.L))).join("")}</tr>`).join("");
+    h += `<tr class="tot"><td class="l">${scr && sqFilter !== "All" ? esc(sqFilter) + " total" : "Session total"}</td>${scr ? "<td></td>" : ""}${cols.map(c => td(c[1](T.tot))).join("")}</tr></tbody>`;
+    const n = NOTES[key];
+    return `<section class="tsec"><div class="row between"><h3>${esc(title)}</h3><button class="btn ghost" data-act="copy-table" data-t="${key}" style="min-height:32px">Copy</button></div>
+      <div class="tbl"><table id="tbl-${key}">${h}</table></div><div class="small">${esc(typeof n === "function" ? n() : n)}</div></section>`;
+  }).join("");
+}
+function tableTSV(key) {
+  return [...$("tbl-" + key).querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent.trim()).join("\t")).join("\n");
+}
+async function copy(txt) {
+  try { await navigator.clipboard.writeText(txt); toast("Copied. Paste it into Excel or Sheets.") }
+  catch (e) { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("Copied.") } catch (_) { toast("Copy isn't available here.") } ta.remove() }
+}
+let dlCap = null;
+if (window.claude && window.claude.use) window.claude.use("downloads").then(d => { dlCap = d }).catch(() => {});
+async function download(name, text, type) {
+  if (dlCap) { try { const r = await dlCap.save({ filename: name, data: new Blob([text], { type: type || "text/plain" }) }); if (r && r.status === "saved") toast("Saved " + name + "."); } catch (e) { toast("The file wasn't saved.") } return }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: type || "text/plain" })); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove() }, 500);
+}
+function playsCSV() {
+  const s = cur(); const vids = Object.fromEntries((s.videos || []).map(v => [v.id, v.label]));
+  const rows = [["Session","Video","Period","Video time","Seconds","Squad","Player","Stat","Shot type","Tier","Turnover type","Live/Dead","Call"]];
+  for (const p of s.plays.slice().sort((a, b) => a.ts - b.ts)) for (const it of p.items)
+    rows.push([s.name, vids[p.vid] || (p.vid === "local" ? "File" : ""), p.period, fmtT(p.t), p.t, itemSquad(p, it) || "", it.p || "", KNAME[it.k] || it.k, it.stype || "", it.tier || "", it.toType || "", it.ball || "", p.text]);
+  return rows.map(r => r.map(v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v).join(",")).join("\n");
+}
+
+/* ===================== RENDER: CALL ===================== */
+function renderCall() {
+  const s = cur();
+  $("noSess").hidden = !!s; $("callMain").hidden = !s;
+  renderSessPick();
+  if (!s) return;
+  const vids = s.videos || [];
+  if (!s.curVid || (s.curVid !== "local" && !vids.some(v => v.id === s.curVid))) s.curVid = vids[0] ? vids[0].id : null;
+  $("vidChips").innerHTML = vids.map(v => `<button class="chip" data-act="vid" data-id="${v.id}" aria-pressed="${s.curVid === v.id}">${esc(v.label)}</button>`).join("") +
+    (V.localUrl ? `<button class="chip" data-act="vid" data-id="local" aria-pressed="${s.curVid === "local"}">File: ${esc(V.localName)}</button>` : "") +
+    (!vids.length ? `<span class="small">No YouTube link yet. <button class="btn ghost" data-act="edit-session" data-id="${s.id}" style="min-height:28px">Add one</button></span>` : "");
+  const v = currentVideo(); const lockP = v && LABEL_PERIOD[v.label];
+  $("perChips").innerHTML = (lockP && lockP.startsWith("H") ? ["H1","H2"] : PERIODS).map(p => `<button class="chip" data-act="period" data-p="${p}" aria-pressed="${curPeriod() === p}" ${lockP && lockP !== p ? "disabled style='opacity:.4'" : ""}>${PLAB[p] || p}</button>`).join("");
+  renderPBP(); renderTally();
+}
+function renderSessPick() {
+  $("sessSel").innerHTML = S.sessions.length ? S.sessions.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(x => `<option value="${x.id}" ${x.id === S.cur ? "selected" : ""}>${esc(x.name)}${x.date ? " · " + esc(x.date) : ""}</option>`).join("") : `<option value="">No sessions yet</option>`;
+}
+$("sessSel").addEventListener("change", e => { if (!e.target.value) return; S.cur = e.target.value; save(); sqFilter = "All"; lastBatch = null; $("lastResult").innerHTML = ""; renderAll(); showVideo(currentVideo() || (cur() && cur().curVid === "local" ? { id: "local" } : null)) });
+
+/* ===================== SESSIONS ===================== */
+let formDraft = null;
+function sessionCard(x) {
+  const players = new Set(x.plays.flatMap(p => p.items.map(i => i.p).filter(Boolean))).size;
+  return `<div class="card scard"><div class="row between"><h3>${esc(x.name)}</h3><span class="tag">${esc(x.type)}</span></div>
+    <span class="small">${esc(x.date || "No date")} · ${x.plays.length} plays · ${players} players · ${(x.videos || []).length} video${(x.videos || []).length === 1 ? "" : "s"}${x.sample ? " · sample" : ""}</span>
+    ${x.opponent ? `<span class="note">${esc(x.opponent)}</span>` : ""}
+    <div class="row"><button class="btn primary" data-act="open-session" data-id="${x.id}">Open</button><button class="btn" data-act="edit-session" data-id="${x.id}">Edit</button>
+    <button class="btn danger ${armed === "s:" + x.id ? "armed" : ""}" data-act="del-session" data-id="${x.id}">${armed === "s:" + x.id ? "Delete for good" : "Delete"}</button></div></div>`;
+}
+function renderSessions() {
+  $("sessList").innerHTML = S.sessions.length ? S.sessions.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(sessionCard).join("") : `<div class="note">No sessions yet.</div>`;
+  renderForm();
+}
+function renderForm() {
+  const f = $("sessForm"); if (!formDraft) { f.hidden = true; return }
+  f.hidden = false; const d = formDraft;
+  f.innerHTML = `<div class="row between"><span class="label">${d._new ? "New session" : "Edit session"}</span><button class="btn ghost" data-act="cancel-form">Cancel</button></div>
+  <div class="form">
+    <div class="field"><label class="label" for="fName">Name</label><input id="fName" value="${esc(d.name)}" placeholder="Heat v TRU"></div>
+    <div class="field"><label class="label" for="fDate">Date</label><input id="fDate" type="date" value="${esc(d.date)}"></div>
+    <div class="field"><label class="label" for="fType">Type</label><select id="fType"><option ${d.type === "Game" ? "selected" : ""}>Game</option><option ${d.type === "Scrimmage" ? "selected" : ""}>Scrimmage</option></select></div>
+    <div class="field"><label class="label" for="fOpp">${d.type === "Game" ? "Opponent" : "Description"}</label><input id="fOpp" value="${esc(d.opponent || "")}"></div>
+  </div>
+  <div class="field"><span class="label">YouTube links</span>
+    ${(d.videos || []).map((v, i) => `<div class="vrow"><select data-vi="${i}" class="vLab">${VLABELS.map(l => `<option ${v.label === l ? "selected" : ""}>${l}</option>`).join("")}</select><input data-vi="${i}" class="vUrl" value="${esc(v.url)}" placeholder="https://youtu.be/…"><button class="ib" data-act="del-vid" data-vi="${i}">✕</button></div>`).join("")}
+    <div><button class="btn" data-act="add-vid">Add a link</button></div>
+    <span class="small">One full-game video, separate halves or quarters, or a short segment. Times are counted from the start of each video.</span>
+  </div>
+  ${d.type === "Scrimmage" ? `<div class="field"><span class="label">Squads</span><span class="small">Put each player on a squad. Saying the player's name in a call is then enough.</span>
+    <div class="sqgrid">${S.roster.filter(r => r.name).map(r => { const q = (d.squadOf || {})[r.name] || ""; return `<div class="sqrow"><span>${esc(r.name)}</span><div class="seg">${S.squads.map(sq => `<button data-act="sq" data-p="${esc(r.name)}" data-q="${esc(sq)}" aria-pressed="${q === sq}"><span class="sw" style="background:${sqColor(sq)}"></span> ${esc(sq)}</button>`).join("")}<button data-act="sq" data-p="${esc(r.name)}" data-q="" aria-pressed="${!q}">Out</button></div></div>` }).join("")}</div></div>` : ""}
+  <div class="row"><button class="btn primary" data-act="save-form">${d._new ? "Create and start calling" : "Save"}</button></div>`;
+}
+function pullForm() {
+  const d = formDraft; if (!d) return;
+  d.name = $("fName").value; d.date = $("fDate").value; d.type = $("fType").value; d.opponent = $("fOpp").value;
+  document.querySelectorAll(".vLab").forEach(el => d.videos[+el.dataset.vi].label = el.value);
+  document.querySelectorAll(".vUrl").forEach(el => d.videos[+el.dataset.vi].url = el.value.trim());
+}
+function newSession() { formDraft = { _new: true, id: uid("s"), name: "", date: todayISO(), type: "Game", opponent: "", videos: [{ id: uid("v"), label: "Full game", url: "" }], squadOf: {}, plays: [] }; view = "sessions"; renderAll(); setTimeout(() => $("fName") && $("fName").focus(), 30) }
+function saveForm() {
+  pullForm(); const d = formDraft;
+  d.name = d.name.trim() || (d.type === "Game" ? "Game" : "Scrimmage") + " " + (d.date || "");
+  d.videos = d.videos.filter(v => v.url);
+  const bad = d.videos.find(v => !ytId(v.url)); if (bad) { toast("“" + bad.url + "” doesn't look like a YouTube link."); return }
+  const isNew = d._new; delete d._new;
+  if (isNew) S.sessions.push(d); else { const i = S.sessions.findIndex(x => x.id === d.id); S.sessions[i] = Object.assign(S.sessions[i], d) }
+  S.cur = d.id; formDraft = null; save();
+  if (isNew) { view = "call"; renderAll(); showVideo(currentVideo()); toast("Session ready. Start calling.") } else { renderAll(); showVideo(currentVideo()) }
+}
+
+/* ===================== SETUP ===================== */
+function renderSetup() {
+  $("rosterT").innerHTML = `<thead><tr><th>#</th><th class="l">Player</th><th class="l">Spoken names</th><th></th></tr></thead><tbody>` +
+    S.roster.map((r, i) => `<tr><td style="width:60px"><input class="rNum" data-i="${i}" value="${esc(r.num)}" inputmode="numeric"></td><td><input class="rName" data-i="${i}" value="${esc(r.name)}"></td><td><input class="rAlias" data-i="${i}" value="${esc(r.alias)}" placeholder="optional"></td><td><button class="ib" data-act="del-player" data-i="${i}" title="Remove">✕</button></td></tr>`).join("") + `</tbody>`;
+  $("weightsF").innerHTML = WLAB.map(([k, l]) => `<div class="field"><label class="label" for="w_${k}">${esc(l)}</label><input id="w_${k}" type="number" step="${k === "factor" ? "0.0001" : "1"}" value="${k === "factor" ? (+S.weights[k]).toFixed(4) : S.weights[k]}"></div>`).join("");
+  $("optLead").value = S.leadIn; $("optLang").value = S.lang; $("optSquads").value = S.squads.join(", ");
+}
+function pullRoster() {
+  document.querySelectorAll(".rName").forEach(el => S.roster[+el.dataset.i].name = el.value.trim());
+  document.querySelectorAll(".rNum").forEach(el => S.roster[+el.dataset.i].num = el.value.trim());
+  document.querySelectorAll(".rAlias").forEach(el => S.roster[+el.dataset.i].alias = el.value.trim());
+}
+function saveSetup() {
+  pullRoster(); S.roster = S.roster.filter(r => r.name);
+  for (const [k] of WLAB) { const v = parseFloat($("w_" + k).value); if (!isNaN(v)) S.weights[k] = v }
+  S.leadIn = Math.max(0, Math.min(30, parseInt($("optLead").value, 10) || 0));
+  S.lang = $("optLang").value;
+  const sq = $("optSquads").value.split(",").map(x => x.trim()).filter(Boolean); if (sq.length) S.squads = sq;
+  save(); reindex(); renderSetup(); $("setupMsg").textContent = "Saved."; setTimeout(() => $("setupMsg").textContent = "", 2000);
+  if (listening) { stopMic(); startMic() }
+}
+
+/* ===================== SAMPLE ===================== */
+function sample() {
+  const s = { id: uid("s"), name: "Sample scrimmage", date: todayISO(), type: "Scrimmage", opponent: "Black v White, 2 × 4 minutes (sample)", videos: [], squadOf: {}, plays: [], sample: true, period: "Q1" };
+  const white = ["Tarun Saroya","Ty Lockwood","Will Zylyk","Isaak Moore","Dom Zaino"], black = ["DJ Roberts","Anthony Brady","Mathias Schertzer","Tylen Lewis","Kai Bohmert"];
+  white.forEach(n => s.squadOf[n] = "White"); black.forEach(n => s.squadOf[n] = "Black");
+  S.sessions.push(s); S.cur = s.id;
+  const calls = ["Tarun drive make gold assist Ty at 12","DJ catch and shoot three miss at 25","Ty defensive rebound at 27","Will paint touch in six at 31","Will kick out assist Isaak catch and shoot three make at 33",
+    "Anthony turnover picked off by Tarun at 48","Tarun transition layup make at 51","Mathias post up make at 66","Dom pull up three miss at 80","Tylen offensive rebound putback make at 82",
+    "Kai charge at 95","Isaak floater miss at 104","DJ defensive rebound at 105","DJ upcycle at 111","Tylen mid range red miss at 113","Ty wall up at 120",
+    "Will turnover traveling at 131","Anthony paint touch at 140","Anthony right read at 141","Mathias layup blocked by Dom at 142","Tarun pursuit dive at 150","Kai free throw 1 of 2 at 162","Ty you at 170","Dom tip at 176"];
+  for (const c of calls) { const r = CallParser.parseCall(c, { index, roster: S.roster, squads: S.squads }); for (const p of r) s.plays.push({ id: uid("p"), vid: null, period: "Q1", t: p.time ? p.time.abs : 0, squad: p.squad, text: p.text, items: p.items, notes: p.notes, warns: p.warns, ts: Date.now() + s.plays.length, src: "sample" }) }
+  save(); view = "call"; renderAll(); showVideo(null); toast("Sample scrimmage loaded. Delete it from Sessions when you're done.");
+}
+
+/* ===================== GLOBAL HANDLERS ===================== */
+let view = "call";
+function renderAll() {
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view));
+  ["call", "sessions", "setup", "help"].forEach(v => $("v-" + v).hidden = v !== view);
+  renderSessPick();
+  if (view === "call") renderCall(); else if (view === "sessions") renderSessions(); else if (view === "setup") renderSetup();
+}
+function arm(id) { armed = id; clearTimeout(armT); armT = setTimeout(() => { armed = null; if (view === "call") renderPBP(); else if (view === "sessions") renderSessions() }, 3500) }
+document.addEventListener("click", e => {
+  const nb = e.target.closest("nav.tabs button"); if (nb) { if (view === "sessions" && formDraft) pullForm(); view = nb.dataset.view; renderAll(); return }
+  const sqb = e.target.closest("[data-sq]"); if (sqb) { sqFilter = sqb.dataset.sq; renderTally(); return }
+  const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT") return;
+  const a = el.dataset.act; const s = cur();
+  switch (a) {
+    case "mic": listening ? stopMic() : startMic(); break;
+    case "book": bookTyped(); break;
+    case "undo": undo(); break;
+    case "toggle": isPlaying() ? pause() : play(); break;
+    case "seek": seekTo(now() + (+el.dataset.d)); break;
+    case "period": if (s) { s.period = el.dataset.p; save(); renderCall() } break;
+    case "vid": if (s) { s.curVid = el.dataset.id; save(); renderCall(); showVideo(el.dataset.id === "local" ? { id: "local" } : currentVideo()) } break;
+    case "pick-file": $("fileIn").click(); break;
+    case "jump": { const p = s.plays.find(x => x.id === el.dataset.id); if (p) jump(p); break }
+    case "replay": { let w = null; try { w = window.open(el.href, "heatReplay", "popup,width=1100,height=660") } catch (_) {} if (w) { e.preventDefault(); try { w.focus() } catch (_) {} } if (V.mode === "yt") pause(); break }
+    case "edit": editing = el.dataset.id; renderPBP(); break;
+    case "edit-save": saveEdit(el.dataset.id); break;
+    case "del": { const id = el.dataset.id; if (armed === id) { armed = null; s.plays = s.plays.filter(p => p.id !== id); save(); renderPBP(); renderTally(); toast("Play removed.") } else { arm(id); renderPBP() } break }
+    case "copy-table": copy(tableTSV(el.dataset.t)); break;
+    case "csv": if (s) download((s.name || "session").replace(/[^\w]+/g, "-") + "-plays.csv", playsCSV(), "text/csv"); break;
+    case "new-session": newSession(); break;
+    case "sample": sample(); break;
+    case "open-session": S.cur = el.dataset.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo()); break;
+    case "edit-session": { const x = S.sessions.find(q => q.id === el.dataset.id); if (x) { formDraft = clone(x); formDraft.videos = formDraft.videos || []; view = "sessions"; renderAll() } break }
+    case "del-session": { const id = el.dataset.id; if (armed === "s:" + id) { armed = null; S.sessions = S.sessions.filter(q => q.id !== id); if (S.cur === id) S.cur = S.sessions[0] ? S.sessions[0].id : null; save(); renderAll(); toast("Session deleted.") } else { arm("s:" + id); renderSessions() } break }
+    case "cancel-form": formDraft = null; renderSessions(); break;
+    case "add-vid": pullForm(); formDraft.videos.push({ id: uid("v"), label: formDraft.videos.length ? "Q" + Math.min(4, formDraft.videos.length + 1) : "Full game", url: "" }); renderForm(); break;
+    case "del-vid": pullForm(); formDraft.videos.splice(+el.dataset.vi, 1); renderForm(); break;
+    case "sq": pullForm(); formDraft.squadOf = formDraft.squadOf || {}; if (el.dataset.q) formDraft.squadOf[el.dataset.p] = el.dataset.q; else delete formDraft.squadOf[el.dataset.p]; renderForm(); break;
+    case "save-form": saveForm(); break;
+    case "add-player": pullRoster(); S.roster.push({ name: "", num: "", alias: "" }); renderSetup(); const ins = document.querySelectorAll(".rName"); ins[ins.length - 1].focus(); break;
+    case "del-player": pullRoster(); S.roster.splice(+el.dataset.i, 1); renderSetup(); break;
+    case "save-setup": saveSetup(); break;
+    case "backup": download("heat-film-caller-backup-" + todayISO() + ".json", JSON.stringify(S, null, 1), "application/json"); break;
+    case "restore": $("restoreIn").click(); break;
+  }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "fType") { pullForm(); renderForm() }
+  if (e.target.dataset && e.target.dataset.act === "assign") {
+    const s = cur(); const p = s.plays.find(x => x.id === e.target.dataset.id); if (!p || !e.target.value) return;
+    p.items.forEach(i => { if (!i.p) i.p = e.target.value }); p.warns = p.warns.filter(w => !/No player|Which player/.test(w)); save(); renderPBP(); renderTally();
+  }
+  if (e.target.id === "manualT") { const t = parseT(e.target.value); if (t != null) V.manual = t }
+});
+$("restoreIn").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); if (!d || !Array.isArray(d.sessions)) throw 0; localStorage.setItem(KEY, JSON.stringify(d)); S = load(); reindex(); renderAll(); toast("Backup restored.") } catch (err) { toast("That file isn't a Heat Film Caller backup.") } };
+  r.readAsText(f);
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id === "editIn") { if (e.key === "Enter") { e.preventDefault(); saveEdit(editing) } if (e.key === "Escape") { editing = null; renderPBP() } return }
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || view !== "call" || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === " ") { e.preventDefault(); isPlaying() ? pause() : play() }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); seekTo(now() - 5) }
+  else if (e.key === "ArrowRight") { e.preventDefault(); seekTo(now() + 5) }
+  else if (e.key === "/") { e.preventDefault(); $("callIn").focus() }
+  else if (e.key === "m" || e.key === "M") { listening ? stopMic() : startMic() }
+  else if (e.key === "u" || e.key === "U") undo();
+});
+
+renderAll();
+showVideo(currentVideo() || null);
+})();
+</script>
+</body>
+</html>
