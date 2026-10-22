@@ -67,6 +67,10 @@ textarea{width:100%;min-height:90px}
 .callbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start}
 .callbar .book{grid-column:1 / -1;min-height:40px}
 .preview:empty,#lastResult:empty{display:none}
+.tagbtn{border:0;background:none;padding:0;cursor:pointer;border-radius:6px}
+.tagbtn:hover .tag{outline:2px solid var(--heat)}
+.keycap{cursor:pointer;caret-color:transparent}
+.keycap:focus{border-color:var(--heat)}
 .divider{border-top:1px solid var(--line);margin:0 -12px}
 .mic{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--raise);display:grid;place-items:center}
 .mic svg{width:24px;height:24px}
@@ -205,9 +209,9 @@ th.grp{background:var(--raise);color:var(--ink)}
         </div>
         <div id="ytMsg" class="banner" hidden></div>
         <div class="transport">
-          <button class="tbtn" data-act="seek" data-d="-5" title="Back 5 seconds (←)">−5</button>
+          <button class="tbtn" data-act="seek" data-d="-step" id="backBtn" title="Back (←)">−3</button>
           <button class="tbtn" data-act="toggle" id="playBtn" title="Play / pause (space)" style="min-width:60px">▶</button>
-          <button class="tbtn" data-act="seek" data-d="5" title="Forward 5 seconds (→)">+5</button>
+          <button class="tbtn" data-act="seek" data-d="step" id="fwdBtn" title="Forward (→)">+3</button>
           <div class="clock" id="clock">0:00</div>
           <select id="rate" title="Playback speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
           <span class="label" style="margin-left:auto">Period</span>
@@ -279,6 +283,9 @@ th.grp{background:var(--raise);color:var(--ink)}
         <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Options</h3>
         <div class="form">
           <div class="field"><label class="label" for="optLead">Clip lead-in (seconds)</label><input id="optLead" type="number" min="0" max="30"></div>
+          <div class="field"><label class="label" for="optStep">Jump back / forward (seconds)</label><input id="optStep" type="number" min="1" max="30"></div>
+          <div class="field"><label class="label" for="keyBack">Back key</label><input id="keyBack" class="keycap" readonly placeholder="Click, then press a key"></div>
+          <div class="field"><label class="label" for="keyFwd">Forward key</label><input id="keyFwd" class="keycap" readonly placeholder="Click, then press a key"></div>
           <div class="field"><label class="label" for="optLang">Speech accent</label><select id="optLang"><option value="en-CA">English (Canada)</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="en-AU">English (Australia)</option></select></div>
           <div class="field"><label class="label" for="optSquads">Scrimmage squads</label><input id="optSquads" placeholder="White, Black, Blue"></div>
         </div>
@@ -339,7 +346,7 @@ th.grp{background:var(--raise);color:var(--ink)}
         <tr><td><code>second quarter</code> · <code>overtime</code> · <code>second half</code></td><td>Change the period on a full-game video</td></tr>
       </tbody></table>
       <h3>Keyboard</h3>
-      <p><span class="kbd">Space</span> play or pause · <span class="kbd">←</span> <span class="kbd">→</span> five seconds · <span class="kbd">/</span> type a call · <span class="kbd">M</span> microphone · <span class="kbd">U</span> undo</p>
+      <p><span class="kbd">Space</span> play or pause · <span class="kbd">←</span> <span class="kbd">→</span> back or forward 3 seconds (change the keys and seconds in Setup) · <span class="kbd">Shift</span>+<span class="kbd">←</span> <span class="kbd">→</span> 10 seconds · <span class="kbd">/</span> type a call · <span class="kbd">M</span> microphone · <span class="kbd">U</span> undo</p>
     </div>
     <div class="card">
       <h3>Shots</h3>
@@ -349,7 +356,7 @@ th.grp{background:var(--raise);color:var(--ink)}
         <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
         <tr><td><span class="tier t-Silver"></span> Silver</td><td>catch and shoot, spot up</td></tr>
         <tr><td><span class="tier t-Bronze"></span> Bronze</td><td>mid-range, jumper, pull-up, floater, runner, pull-up three, step-back three</td></tr>
-        <tr><td><span class="tier t-Red"></span> Red</td><td>say “red” or “bad shot” to downgrade any shot</td></tr>
+        <tr><td><span class="tier t-Red"></span> Red</td><td>say “red shot”, “bad shot” or “shot we didn’t want” to downgrade any shot. To change a grade afterwards, click the shot in the play-by-play: each click moves it Gold → Silver → Bronze → Red → no grade</td></tr>
         <tr><td>Threes</td><td>three, trey, from deep, 3 pointer. A plain “three make” is booked ungraded; add the type or a tier</td></tr>
         <tr><td>Free throws</td><td>free throw make, free throw miss, 1 of 2, both, split</td></tr>
       </tbody></table>
@@ -449,6 +456,8 @@ th.grp{background:var(--raise);color:var(--ink)}
     out2 = out2.replace(/(?<= )6 second paint(?: touch)?(?= )/g, "paint touch in 6");
     out2 = out2.replace(new RegExp("(?<= )(?:pain|pane|pained|painted|pink|paying|paid) " + TOUCH + "(?= )", "g"), "paint touch");
     out2 = out2.replace(/(?<= )paint (?:touched|touching|touchin|such|dutch|tuck|touchy|tough)(?= )/g, "paint touch");
+    // "red shot" is often heard as "read shot", "Fred shot", "bread shot"…; any of those next to "shot" means the Red grade
+    out2 = out2.replace(/(?<= )(?:read|reed|reid|fred|bread|rad|wrecked|rid|rod|ret|wed|rhett|redd|ready|reds)(?= shots? )/g, "red");
     out2 = out2.replace(/(?<= )(?:rightread|writeread|riteread|rideread|rider|ryder|writer|rr|double r|r and r)(?= )/g, "right read");
     return out2;
   }
@@ -559,7 +568,7 @@ th.grp{background:var(--raise);color:var(--ink)}
     { re: "floater|floaters|runner|teardrop|float", type: "Floater", tier: "Bronze", val: 2 },
     { re: "mid range|midrange|mid|jump shot|jumper|pull up|pullup|elbow|baseline j|baseline|fadeaway|fade away|fade", type: "Mid-range", tier: "Bronze", val: 2 },
   ];
-  const TIERS = [["gold", "Gold"], ["silver", "Silver"], ["bronze", "Bronze"], ["red|bad shot|forced shot|heat check|red shot", "Red"]];
+  const TIERS = [["gold", "Gold"], ["silver", "Silver"], ["bronze", "Bronze"], ["red|bad shot|forced shot|heat check|red shot|poor shot|bad quality|poor quality|low quality|shot we don't want|shot we dont want|shot we did not want|dont want|don't want|did not want|not a shot we want", "Red"]];
 
   // ---------- time extraction ----------
   function extractTimes(str) {
@@ -864,7 +873,7 @@ function load() {
   s = s || {};
   s.roster = Array.isArray(s.roster) && s.roster.length ? s.roster : ROSTER0.map(n => ({ name: n, num: "", alias: "" }));
   s.weights = Object.assign({}, W0, s.weights || {});
-  s.leadIn = s.leadIn ?? 5; s.lang = s.lang || "en-CA";
+  s.leadIn = s.leadIn ?? 5; s.lang = s.lang || "en-CA"; s.step = s.step || 3; s.keyBack = s.keyBack || "ArrowLeft"; s.keyFwd = s.keyFwd || "ArrowRight";
   s.squads = Array.isArray(s.squads) && s.squads.length ? s.squads : ["White", "Black", "Blue"];
   s.sessions = Array.isArray(s.sessions) ? s.sessions : [];
   // one-time: add the sound-alikes Chrome was heard using for these names (only adds, never removes)
@@ -926,7 +935,7 @@ function showVideo(v) {
   if (V.yt && V.ytVid === v.id) return;
   if (V.yt) { V.yt.cueVideoById({ videoId: id, startSeconds: ytStart(v.url) }); V.ytVid = v.id; return }
   V.yt = new YT.Player("ytHost", {
-    videoId: id, playerVars: { rel: 0, modestbranding: 1, playsinline: 1, start: ytStart(v.url) },
+    videoId: id, playerVars: { rel: 0, modestbranding: 1, playsinline: 1, disablekb: 1, start: ytStart(v.url) },
     events: {
       onReady: () => { V.ytOk = true; V.yt.setPlaybackRate(+$("rate").value || 1) },
       onStateChange: () => updatePlayBtn(),
@@ -969,6 +978,11 @@ function seekTo(t) { t = Math.max(0, t); try { if (V.mode === "yt") V.yt.seekTo(
 function updatePlayBtn() { $("playBtn").textContent = isPlaying() ? "❚❚" : "▶" }
 function tick() { const c = $("clock"); if (c) c.textContent = fmtT(now()) }
 setInterval(() => { if (view === "call") { tick(); updatePlayBtn() } }, 250);
+window.addEventListener("blur", () => setTimeout(() => {
+  const a = document.activeElement;
+  if (a && a.tagName === "IFRAME" && $("vidbox").contains(a)) { try { a.blur() } catch (e) {} try { window.focus() } catch (e) {} }
+}, 0));
+$("localVid").addEventListener("keydown", e => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") e.preventDefault() }, true);
 $("localVid").addEventListener("play", updatePlayBtn); $("localVid").addEventListener("pause", updatePlayBtn);
 $("rate").addEventListener("change", () => { const r = +$("rate").value; try { if (V.mode === "yt") V.yt.setPlaybackRate(r); else if (V.mode === "local") $("localVid").playbackRate = r } catch (e) {} });
 $("fileIn").addEventListener("change", e => {
@@ -1147,9 +1161,10 @@ function renderPBP() {
     if (editing === p.id) return `<div class="play"><div class="tm"><span class="tlink" style="text-decoration:none">${fmtT(p.t)}</span></div><div class="bd"><input id="editIn" value="${esc(p.text)}" style="width:100%"><span class="small">Enter saves · Esc cancels · a new time in the text replaces ${fmtT(p.t)}</span></div><div class="acts"><button class="ib" data-act="edit-save" data-id="${p.id}">Save</button></div></div>`;
     return `<div class="play ${p.warns.length ? "warned" : ""}">
       <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}<span class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
-      <div class="bd"><div class="row" style="gap:5px">${p.squad || sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(p.squad || sqOfPlay(p))}" title="${esc(p.squad || sqOfPlay(p))}"></span>` : ""}${p.items.map(i => itemTag(i)).join("")}</div>
+      <div class="bd"><div class="row" style="gap:5px">${p.squad || sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(p.squad || sqOfPlay(p))}" title="${esc(p.squad || sqOfPlay(p))}"></span>` : ""}${p.items.map((i, ix) => /^[23][MX]$/.test(i.k) && !viewOnly() ? `<button class="tagbtn" data-act="tier" data-id="${p.id}" data-i="${ix}" title="Click to change the shot grade">${itemTag(i)}</button>` : itemTag(i)).join("")}</div>
         ${p.warns.length ? `<div class="warn">${esc(p.warns.join(" · "))}</div>` : ""}
         ${(() => { const s0 = cur(); if (!s0 || s0.type !== "Scrimmage" || viewOnly() || p.squad) return ""; const need = [...new Set(p.items.map(i => i.p).filter(n => n && !(s0.squadOf || {})[n]))]; return need.map(n => `<div class="row" style="gap:4px"><span class="warn" style="font-size:12px">${esc(short(n))} has no squad:</span>${S.squads.map(q => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="set-squad" data-p="${esc(n)}" data-q="${esc(q)}"><span class="sw" style="background:${sqColor(q)}"></span> ${esc(q)}</button>`).join("")}</div>`).join("") })()}
+        ${viewOnly() ? "" : p.items.map((i, ix) => i.k !== "TO" || (i.toType && i.ball) ? "" : `<div class="row" style="gap:4px">${!i.toType ? `<span class="warn" style="font-size:12px">Turnover type:</span>${["Passing", "Handling", "Violation", "Rushed"].map(t => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="to-set" data-id="${p.id}" data-i="${ix}" data-f="toType" data-v="${t}">${t}</button>`).join("")}` : ""}${!i.ball ? `<span class="warn" style="font-size:12px">${i.toType ? "Ball:" : "·"}</span>${["Live", "Dead"].map(t => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="to-set" data-id="${p.id}" data-i="${ix}" data-f="ball" data-v="${t}">${t}</button>`).join("")}` : ""}</div>`).join("")}
         ${unresolved && !viewOnly() ? `<div class="row"><span class="small">Give it to</span><select data-act="assign" data-id="${p.id}"><option value="">Choose player</option>${S.roster.filter(r => r.name).map(r => `<option>${esc(r.name)}</option>`).join("")}</select></div>` : ""}
         <div class="tx">“${esc(p.text)}”</div></div>
       <div class="acts" ${viewOnly() ? "hidden" : ""}><button class="ib" data-act="edit" data-id="${p.id}" title="Edit">Edit</button><button class="ib ${armed === p.id ? "armed" : ""}" data-act="del" data-id="${p.id}" title="Delete">${armed === p.id ? "Delete" : "✕"}</button></div>
@@ -1452,6 +1467,8 @@ function playsCSV() {
 /* ===================== RENDER: CALL ===================== */
 function renderCall() {
   const s = cur();
+  $("backBtn").textContent = "−" + S.step; $("fwdBtn").textContent = "+" + S.step;
+  $("backBtn").title = `Back ${S.step} seconds (${keyName(S.keyBack)})`; $("fwdBtn").title = `Forward ${S.step} seconds (${keyName(S.keyFwd)})`;
   $("noSess").hidden = !!s; $("callMain").hidden = !s;
   renderSessPick();
   if (!s) return;
@@ -1531,7 +1548,9 @@ function saveForm() {
     // keep plays booked while the form was open; relabelled videos move their plays to the new period
     d.plays = live.plays;
     const byVid = Object.fromEntries(d.videos.map(v => [v.id, v]));
-    let moved = 0, orphan = 0;
+    let moved = 0, orphan = 0, linked = 0;
+    // plays brought in without a video (typed up from notes) attach to the first video added
+    if (d.videos.length) for (const p of d.plays) if (!p.vid) { p.vid = d.videos[0].id; linked++ }
     for (const p of d.plays) {
       if (!p.vid || p.vid === "local") continue;
       const v = byVid[p.vid];
@@ -1539,6 +1558,7 @@ function saveForm() {
       const per = LABEL_PERIOD[v.label]; if (per && p.period !== per) { p.period = per; moved++ }
     }
     if (moved) msg = `Saved. ${moved} play${moved === 1 ? "" : "s"} moved to the new period.`;
+    if (linked) msg += ` ${linked} play${linked === 1 ? " is" : "s are"} now linked to ${esc(d.videos[0].label)} for replay.`;
     if (orphan) msg += ` ${orphan} play${orphan === 1 ? " was" : "s were"} called on a video you removed; ${orphan === 1 ? "it keeps its" : "they keep their"} stats but lose the replay link.`;
     S.sessions[i] = Object.assign(live, d);
   }
@@ -1552,7 +1572,7 @@ function renderSetup() {
     S.roster.map((r, i) => `<tr><td style="width:60px"><input class="rNum" data-i="${i}" value="${esc(r.num)}" inputmode="numeric"></td><td><input class="rName" data-i="${i}" value="${esc(r.name)}"></td><td><input class="rAlias" data-i="${i}" value="${esc(r.alias)}" placeholder="optional"></td><td><button class="ib" data-act="del-player" data-i="${i}" title="Remove">✕</button></td></tr>`).join("") + `</tbody>`;
   $("weightsF").innerHTML = WLAB.map(([k, l]) => `<div class="field"><label class="label" for="w_${k}">${esc(l)}</label><input id="w_${k}" type="number" step="${k === "factor" ? "0.0001" : "1"}" value="${k === "factor" ? (+S.weights[k]).toFixed(4) : S.weights[k]}"></div>`).join("");
   $("ghRepo").value = ghCfg().repo; $("ghTok").placeholder = ghCfg().token ? "Key saved (paste a new one to replace it)" : "github_pat_…";
-  $("optLead").value = S.leadIn; $("optLang").value = S.lang; $("optSquads").value = S.squads.join(", ");
+  $("optLead").value = S.leadIn; $("optStep").value = S.step; $("keyBack").value = keyName(S.keyBack); $("keyBack").dataset.k = S.keyBack; $("keyFwd").value = keyName(S.keyFwd); $("keyFwd").dataset.k = S.keyFwd; $("optLang").value = S.lang; $("optSquads").value = S.squads.join(", ");
 }
 function pullRoster() {
   document.querySelectorAll(".rName").forEach(el => S.roster[+el.dataset.i].name = el.value.trim());
@@ -1563,6 +1583,8 @@ function saveSetup() {
   pullRoster(); S.roster = S.roster.filter(r => r.name);
   for (const [k] of WLAB) { const v = parseFloat($("w_" + k).value); if (!isNaN(v)) S.weights[k] = v }
   S.leadIn = Math.max(0, Math.min(30, parseInt($("optLead").value, 10) || 0));
+  S.step = Math.max(1, Math.min(30, parseInt($("optStep").value, 10) || 3));
+  S.keyBack = $("keyBack").dataset.k || "ArrowLeft"; S.keyFwd = $("keyFwd").dataset.k || "ArrowRight";
   S.lang = $("optLang").value;
   const sq = $("optSquads").value.split(",").map(x => x.trim()).filter(Boolean); if (sq.length) S.squads = sq;
   save(); reindex(); renderSetup(); $("setupMsg").textContent = "Saved."; setTimeout(() => $("setupMsg").textContent = "", 2000);
@@ -1771,7 +1793,7 @@ document.addEventListener("click", e => {
     case "book": bookTyped(); break;
     case "undo": undo(); break;
     case "toggle": isPlaying() ? pause() : play(); break;
-    case "seek": seekTo(now() + (+el.dataset.d)); break;
+    case "seek": seekTo(now() + (el.dataset.d === "-step" ? -S.step : el.dataset.d === "step" ? S.step : +el.dataset.d)); break;
     case "period": if (s) { s.period = el.dataset.p; save(); renderCall() } break;
     case "vid": if (s) { s.curVid = el.dataset.id; save(); renderCall(); showVideo(el.dataset.id === "local" ? { id: "local" } : currentVideo()) } break;
     case "pick-file": $("fileIn").click(); break;
@@ -1800,6 +1822,12 @@ document.addEventListener("click", e => {
     case "sample": sample(); break;
     case "open-session": S.cur = el.dataset.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo()); break;
     case "edit-current": { if (!s || s.shared) break; formDraft = clone(s); formDraft.videos = formDraft.videos || []; formDraft._back = true; view = "sessions"; renderAll(); setTimeout(() => { const f = $("sessForm"); if (f) f.scrollIntoView({ block: "start" }) }, 30); break }
+    case "to-set": { if (blockView()) break; const p = s.plays.find(x => x.id === el.dataset.id); const it = p && p.items[+el.dataset.i]; if (!it) break;
+      it[el.dataset.f] = el.dataset.v; if (el.dataset.f === "toType" && el.dataset.v === "Violation" && !it.ball) it.ball = "Dead";
+      p.warns = (p.warns || []).filter(w => !/Turnover type/.test(w)); save(); renderPBP(); renderTally(); toast("Turnover: " + [it.toType, it.ball].filter(Boolean).join(", ") + "."); break }
+    case "tier": { if (blockView()) break; const p = s.plays.find(x => x.id === el.dataset.id); const it = p && p.items[+el.dataset.i]; if (!it) break;
+      const order = ["Gold", "Silver", "Bronze", "Red", null]; it.tier = order[(order.indexOf(it.tier || null) + 1) % order.length];
+      save(); renderPBP(); renderTally(); toast(it.tier ? "Graded " + it.tier + "." : "Grade removed."); break }
     case "set-squad": { if (!s || s.shared) break; s.squadOf = s.squadOf || {}; s.squadOf[el.dataset.p] = el.dataset.q; save(); renderPBP(); renderTally(); toast(el.dataset.p + " is on " + el.dataset.q + "."); break }
     case "edit-session": { const x = S.sessions.find(q => q.id === el.dataset.id); if (x) { formDraft = clone(x); formDraft.videos = formDraft.videos || []; view = "sessions"; renderAll() } break }
     case "del-session": { const id = el.dataset.id; if (armed === "s:" + id) { armed = null; S.sessions = S.sessions.filter(q => q.id !== id); if (S.cur === id) S.cur = S.sessions[0] ? S.sessions[0].id : null; save(); renderAll(); toast("Session deleted.") } else { arm("s:" + id); renderSessions() } break }
@@ -1828,13 +1856,21 @@ $("restoreIn").addEventListener("change", e => {
   const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); if (!d || !Array.isArray(d.sessions)) throw 0; localStorage.setItem(KEY, JSON.stringify(d)); S = load(); reindex(); renderAll(); toast("Backup restored.") } catch (err) { toast("That file isn't a Heat Film Caller backup.") } };
   r.readAsText(f);
 });
+function keyOf(e) { return e.key.length === 1 ? e.key.toUpperCase() : e.key }
+function keyName(k) { return ({ ArrowLeft: "← Left arrow", ArrowRight: "→ Right arrow", ArrowUp: "↑ Up arrow", ArrowDown: "↓ Down arrow", " ": "Space", ",": ", (comma)", ".": ". (period)" })[k] || k }
 document.addEventListener("keydown", e => {
+  if (e.target && e.target.classList && e.target.classList.contains("keycap")) {
+    if (e.key === "Tab") return; e.preventDefault();
+    const k = keyOf(e); const msg = $("setupMsg");
+    if (["M", "U", "/", " ", "Enter", "Escape"].includes(k)) { msg.textContent = keyName(k) + " is already used by the app. Pick another key."; return }
+    e.target.dataset.k = k; e.target.value = keyName(k); msg.textContent = "Press Save setup to keep it."; return;
+  }
   if (e.key === "Escape") { const m = document.querySelector(".modal:not([hidden])"); if (m) { m.hidden = true; return } }
   if (e.target.id === "editIn") { if (e.key === "Enter") { e.preventDefault(); saveEdit(editing) } if (e.key === "Escape") { editing = null; renderPBP() } return }
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || view !== "call" || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.key === " ") { e.preventDefault(); isPlaying() ? pause() : play() }
-  else if (e.key === "ArrowLeft") { e.preventDefault(); seekTo(now() - 5) }
-  else if (e.key === "ArrowRight") { e.preventDefault(); seekTo(now() + 5) }
+  if (keyOf(e) !== S.keyBack && keyOf(e) !== S.keyFwd && e.key === " ") { e.preventDefault(); isPlaying() ? pause() : play() }
+  else if (keyOf(e) === S.keyBack || (e.key === "ArrowLeft" && S.keyBack !== "ArrowLeft")) { e.preventDefault(); seekTo(now() - (e.shiftKey ? 10 : (keyOf(e) === S.keyBack ? S.step : 5))) }
+  else if (keyOf(e) === S.keyFwd || (e.key === "ArrowRight" && S.keyFwd !== "ArrowRight")) { e.preventDefault(); seekTo(now() + (e.shiftKey ? 10 : (keyOf(e) === S.keyFwd ? S.step : 5))) }
   else if (e.key === "/") { e.preventDefault(); $("callIn").focus() }
   else if (e.key === "m" || e.key === "M") { listening ? stopMic() : startMic() }
   else if (e.key === "u" || e.key === "U") undo();
