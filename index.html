@@ -326,6 +326,8 @@ th.grp{background:var(--raise);color:var(--ink)}
       <table><tbody>
         <tr><td><code>at 39</code> · <code>at 0:39</code> · <code>39 seconds</code></td><td>0:39</td></tr>
         <tr><td><code>at 1:39</code> · <code>at one thirty nine</code> · <code>at 139</code></td><td>1:39</td></tr>
+        <tr><td><code>2 minutes 27</code> · <code>1 minute 8 seconds</code></td><td>2:27 · 1:08 (with or without “at”)</td></tr>
+        <tr><td><code>122 Ariel upcycle</code> (time first)</td><td>1:22 when a call opens with the time</td></tr>
         <tr><td><code>at 1:12:05</code></td><td>1 hour 12 minutes 5 seconds</td></tr>
         <tr><td><code>back 6</code> · <code>6 seconds ago</code></td><td>Six seconds before the stamp</td></tr>
       </tbody></table>
@@ -355,16 +357,17 @@ th.grp{background:var(--raise);color:var(--ink)}
     <div class="card">
       <h3>HVP, rebounds and turnovers</h3>
       <table><tbody>
-        <tr><td>Paint touch in 6</td><td>paint touch in six, early paint touch, P6</td></tr>
+        <tr><td>Paint touch in 6</td><td>paint touch in six (seconds), early paint, quick paint, P6. Say “at” before a time so “6 seconds” is never read as a time</td></tr>
         <tr><td>Paint touch</td><td>paint touch, touched the paint</td></tr>
         <tr><td>Right read · Upcycle</td><td>right read, good read · upcycle</td></tr>
         <tr><td>Charge · Tip</td><td>charge, took a charge · tip, deflection</td></tr>
         <tr><td>Pursuit · YOU · WallUp</td><td>pursuit, hustle, dive, loose ball · you, won his matchup, lockdown · wall up, verticality</td></tr>
         <tr><td>Automatic HVP</td><td>steal, block and offensive rebound earn their points from the box score</td></tr>
         <tr><td>Rebounds</td><td>offensive rebound, O board · defensive rebound, D board (a plain “rebound” is booked defensive)</td></tr>
-        <tr><td>Turnover types</td><td>passing (bad pass, picked off, thrown away) · handling (stripped, lost the handle, fumbled) · violation (travel, carry, 3 seconds, backcourt, offensive foul, out of bounds) · rushed (forced, panic, hurried)</td></tr>
+        <tr><td>Turnover types</td><td>passing (bad pass, picked off, thrown away) · handling (stripped, lost the handle, fumbled) · violation (travel, carry, “3 second violation” or “turnover 3 seconds”, backcourt, offensive foul, out of bounds; a plain “3 seconds” is read as a time) · rushed (forced, panic, hurried)</td></tr>
         <tr><td>Live or dead</td><td>say live or dead; picked off and stripped are live, violations are dead</td></tr>
         <tr><td>Other</td><td>assist, dime · steal · block · foul</td></tr>
+        <tr><td>Name, then pause</td><td>If you say a name and pause, the app waits up to 9 seconds for the play and joins them</td></tr>
       </tbody></table>
     </div>
   </div>
@@ -438,12 +441,21 @@ th.grp{background:var(--raise);color:var(--ink)}
     let out2 = " " + col.join(" ") + " ";
     // "right read" is often misheard: catch the common sound-alikes before anything else reads them
     out2 = out2.replace(/(?<= )(?:all )?(?:right|write|rite|wright|ride|white|light|bright|rights|writes|rides|wrote|alright|rye|ryte)s? ?(?:read|reads|reed|reeds|red|reid|rid|rade|breed|reid's|wread)(?= )/g, "right read");
+    // "paint touch in 6 seconds" is often misheard; normalise the sound-alikes before the time reader can take "6 seconds" as a time
+    const PAINT = "(?:paint|pain|pane|pained|painted|paints|pink|point|paying|paid)";
+    const TOUCH = "(?:touch|touches|touched|touching|touchin|such|dutch|tuck|touchy|tough)";
+    out2 = out2.replace(new RegExp("(?<= )" + PAINT + " ?" + TOUCH + "(?: (?:in|and|n|inn|an|on|within|under|end|it|by|into|inside))? (?:6|sex|sixth|6th|sticks|sic|seeks|sicks|sax)(?: (?:seconds|second|secs|sec|s))?(?= )", "g"), "paint touch in 6");
+    out2 = out2.replace(/(?<= )(?:early|quick|fast) paint(?: touch| touches)?(?= )/g, "paint touch in 6");
+    out2 = out2.replace(/(?<= )6 second paint(?: touch)?(?= )/g, "paint touch in 6");
+    out2 = out2.replace(new RegExp("(?<= )(?:pain|pane|pained|painted|pink|paying|paid) " + TOUCH + "(?= )", "g"), "paint touch");
+    out2 = out2.replace(/(?<= )paint (?:touched|touching|touchin|such|dutch|tuck|touchy|tough)(?= )/g, "paint touch");
     out2 = out2.replace(/(?<= )(?:rightread|writeread|riteread|rideread|rider|ryder|writer|rr|double r|r and r)(?= )/g, "right read");
     return out2;
   }
 
   // ---------- roster index ----------
-  const STOP = new Set(("a an the and or of on in at to too for with by from his her he she it its is was off up out over back " +
+  const STOP = new Set(("more most much many some stuff good nice great play plays ball shot shots exercise there their these those where were what when then them they have with from into over under side line here just said says also only well very really again still minute minutes second seconds three seven eight seventy " +
+    "a an the and or of on in at to too for with by from his her he she it its is was off up out over back " +
     "number no make made makes miss missed misses good read right pass shot shoot three two one free throw foul steal block " +
     "board rebound assist turnover tip drive post wall you charge paint touch live dead white black blue gold silver bronze red " +
     "then next got gets get takes took take had has have this that there").split(" "));
@@ -556,7 +568,16 @@ th.grp{background:var(--raise);color:var(--ink)}
     const put = (m, t) => { marks.push(t); return " \u0001" + (marks.length - 1) + " " };
     // protect violation phrases and the 6-second paint touch
     str = str.replace(R("paint touch in 6 seconds|paint touch in 6|paint touch inside 6|6 second paint touch|paint in 6|touch in 6|early paint touch|p6|p 6"), " ptsix ");
-    str = str.replace(/(?<!at )(?<= )(3|5|8|10) (?:seconds?|second violation)(?: in the (?:key|lane|paint))?(?= )/g, (m, n) => " sec" + n + "viol ");
+    // "1 minute 8 seconds", "2 minutes 27", "3 minutes": spoken video times, with or without "at"
+    str = str.replace(/(?<= )(?:at )?(\d{1,3}) (?:minutes?|mins?) (?:and )?(\d{1,2})(?: (?:seconds?|secs?))?(?= )/g, (m, mi, s) => (+s < 60 ? put(m, { abs: (+mi) * 60 + (+s) }) : m));
+    str = str.replace(/(?<= )(?:at )?(\d{1,3}) (?:minutes?|mins?)(?= )/g, (m, mi) => put(m, { abs: (+mi) * 60 }));
+    // a call that opens with "122" or "03" means 1:22 or 0:03
+    str = str.replace(/^ (\d{1,2})(\d{2})(?= )/, (m, mi, s) => (+s < 60 ? put(m, { abs: (+mi) * 60 + (+s) }) : m));
+    str = str.replace(/^ 0(\d)(?= )/, (m, s) => put(m, { abs: +s }));
+    // "3 seconds" is a violation only when the call is about a turnover or says where; otherwise it's a time
+    if (/ (?:violation|turnover|turn over|tov|in the (?:key|lane|paint)|closely guarded|inbound|inbounds|back court|backcourt|over and back) /.test(str))
+      str = str.replace(/(?<!at )(?<= )(3|5|8|10) (?:seconds?|second violation)(?: in the (?:key|lane|paint))?(?= )/g, (m, n) => " sec" + n + "viol ");
+    str = str.replace(/(?<= )(3|5|8|10) second violation(?= )/g, (m, n) => " sec" + n + "viol ");
     str = str.replace(/(?<= )(?:at )?(\d{1,2}):(\d{2}):(\d{2})(?= )/g, (m, h, mi, s) => put(m, { abs: (+h) * 3600 + (+mi) * 60 + (+s) }));
     str = str.replace(/(?<= )(?:at )?(\d{1,3}):(\d{2})(?= )/g, (m, mi, s) => put(m, { abs: (+mi) * 60 + (+s) }));
     str = str.replace(/(?<= )at (\d{1,3}) (?:minutes? |mins? )?(?:and )?(\d{1,2}) (?:seconds?|secs?)(?= )/g, (m, mi, s) => put(m, { abs: (+mi) * 60 + (+s) }));
@@ -636,8 +657,8 @@ th.grp{background:var(--raise);color:var(--ink)}
     for (const [re, type] of explicitTO) if (take(st, re)) { isTO = isTO || /turnover|turn over|tov|giveaway|cough/.test(text); toType = type; }
     if (take(st, "turnovers|turnover|turn over|turned it over|turns it over|cough up|coughs it up|coughed it up|giveaway|give away|gave it away|lost it|loses it|lost the ball|loses the ball|tov|t o")) isTO = true;
     if (st.s.trim() === "to") { isTO = true; st.s = " " }
-    if (take(st, "live ball|live")) ball = "Live";
-    if (take(st, "dead ball|dead")) ball = "Dead";
+    if (take(st, "live ball|liveball|live")) ball = "Live";
+    if (take(st, "dead ball|deadball|dead")) ball = "Dead";
     if (isTO) {
       // steal words in a turnover clause describe how it was lost
       if (take(st, "steal|steals|stolen|stole|pick|picked|ripped")) { ball = ball || "Live"; if (!toType) toType = "Passing"; toDetail.push("stolen") }
@@ -665,9 +686,11 @@ th.grp{background:var(--raise);color:var(--ink)}
     if (/ blocked /.test(st.s)) {
       if (hasShot) { take(st, "blocked|gets blocked|got blocked"); made = false }
     }
-    if (take(st, "no good|not good|misses|missed|miss|brick|bricks|bricked|rims out|rimmed out|rimmed|in and out|off the rim|front rim|back iron|airball|air ball|short|long|clanks|clanked|no")) made = made === true ? true : false;
-    if (take(st, "makes|made|make|good|bucket|basket|scores|scored|score|hits|hit|drains|drained|cash|cashes|splash|splashes|nails|nailed|buries|buried|finishes|finish|count it|money|swish|wet|converts|knocks it down|knocks down")) { if (made === null) made = true }
+    if (take(st, "no good|not good|misses|missed|miss|brick|bricks|bricked|rims out|rimmed out|rimmed|in and out|off the rim|front rim|back iron|airball|air ball|short|long|clanks|clanked|no make|no basket")) made = made === true ? true : false;
+    if (take(st, "makes|made|make|bucket|basket|scores|scored|score|hits|hit|drains|drained|cash|cashes|splash|splashes|nails|nailed|buries|buried|finishes|finish|count it|money|swish|wet|converts|knocks it down|knocks down")) { if (made === null) made = true }
 
+    // "good" only means a make when the call is already about a shot
+    if (made === null && (sType || val || tier || ft) && take(st, "good")) made = true;
     if (ft) {
       let m = ft.m, a = ft.a;
       if (a == null) { a = ft.both ? 2 : 1; m = made === false ? 0 : made === true ? a : null }
@@ -691,7 +714,7 @@ th.grp{background:var(--raise);color:var(--ink)}
     // ---- assists, steals, blocks, tips ----
     if (take(st, "with the assist|on the assist|assists|assisted|assist|dimes|dime|helper|dished|dish|feed|found him|kicks it to|kick out")) add("AS");
     if (take(st, "steals|steal|stole|pickpocket|pick pocket|picked his pocket|takeaway|took it away|ripped|rips|strip")) add("ST");
-    if (take(st, "blocks|blocked shot|block|blocked|rejection|rejected|rejects|swats|swatted|swat|stuffs|stuffed|stuff|sent it back")) add("BK");
+    if (take(st, "blocks|blocked shot|block|blocked|rejection|rejected|rejects|swats|swatted|swat|stuffs|stuffed|stuffed him|sent it back")) add("BK");
     if (take(st, "tipped|tips|tip|deflections|deflection|deflected|deflects|deflect|got a hand on it|poke|poked|pokes")) add("TP");
 
     // ---- fouls ----
@@ -753,7 +776,7 @@ th.grp{background:var(--raise);color:var(--ink)}
       for (const p of parts) if (p.trim()) plays.push(" " + p.trim() + " ");
     }
     let lastSq = null;
-    return plays.map(ch => { const p = parseOne(ch, marks, ix, ctx, raw); if (p.squad) lastSq = p.squad; else p.squad = lastSq; return p }).filter(p => p.items.length || p.warns.length);
+    return plays.map(ch => { const p = parseOne(ch, marks, ix, ctx, raw); if (p.squad) lastSq = p.squad; else p.squad = lastSq; return p }).filter(p => p.items.length || p.warns.length || p.who.length);
   }
 
   function parseOne(ch, marks, ix, ctx, raw) {
@@ -806,7 +829,7 @@ th.grp{background:var(--raise);color:var(--ink)}
       if (!items.length && !warns.length) warns.push("No stat heard");
     }
     // an assist needs a made basket by a teammate in the same play, unless it's said alone
-    return { time, squad: sq.sq, items, notes: [...new Set(notes)], warns: [...new Set(warns)], text: raw.trim() };
+    return { time, squad: sq.sq, items, notes: [...new Set(notes)], warns: [...new Set(warns)], text: raw.trim(), who: [...new Set(mentions.filter(m => m.idx != null).map(m => ix.byIdx[m.idx].name))] };
   }
 
   const api = { parseCall, buildIndex, normalize, command, extractTimes };
@@ -844,6 +867,12 @@ function load() {
   s.leadIn = s.leadIn ?? 5; s.lang = s.lang || "en-CA";
   s.squads = Array.isArray(s.squads) && s.squads.length ? s.squads : ["White", "Black", "Blue"];
   s.sessions = Array.isArray(s.sessions) ? s.sessions : [];
+  // one-time: add the sound-alikes Chrome was heard using for these names (only adds, never removes)
+  if (!s.aliasV1) {
+    const KNOWN = {"Tylen Lewis": "Thailand, Tyler, Tilen, Tylan", "Kai Bohmert": "boner, Bowman, Bomer, Bommert", "Dom Zaino": "Zano, Zayno", "Ariel Tsaiger": "aerial, Sager, Tsager, Saiger", "Julian Malfair": "Mayfair, Julien, Malfare", "Mathias Schertzer": "Matthias, Matias, Matia, Mattias, shirts are, Schertz", "Simon Reid": "Reed", "Tarun Saroya": "Taryn, Tarin, Taroon", "Michael Adarkwah Nti": "Mike, Mikey", "Faisal Shawwa": "Faizal, Feisel, Fisel, Faizel", "Ty Lockwood": "tie Lockwood, tilockwood, Thai Lockwood", "Isaak Moore": "Isaac"};
+    for (const r of s.roster) { const k = KNOWN[r.name]; if (!k) continue; const have = String(r.alias || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean); const add = k.split(",").map(x => x.trim()).filter(x => !have.includes(x.toLowerCase())); if (add.length) r.alias = [r.alias, add.join(", ")].filter(Boolean).join(", ") }
+    s.aliasV1 = true;
+  }
   if (!s.sessions.some(x => x.id === s.cur)) s.cur = s.sessions[0] ? s.sessions[0].id : null;
   return s;
 }
@@ -1022,7 +1051,7 @@ function micUI() {
 if (!SR) { $("micBtn").title = "Voice needs Chrome or Edge on a computer"; $("micBtn").style.opacity = .5 }
 
 /* ===================== CALLS ===================== */
-let typedStart = null, lastBatch = null;
+let typedStart = null, lastBatch = null, pendingWho = null;
 function ctx() { const s = cur(); return { index, roster: S.roster, squads: s && s.type === "Scrimmage" ? S.squads : [] } }
 function curPeriod() { const s = cur(); const v = currentVideo(); if (v && LABEL_PERIOD[v.label]) return LABEL_PERIOD[v.label]; return (s && s.period) || "Q1" }
 function handleCall(text, t0, source) {
@@ -1037,7 +1066,23 @@ function handleCall(text, t0, source) {
     else if (c.cmd === "period") { s.period = c.p; save(); renderCall(); toast("Period: " + (PLAB[c.p] || c.p)) }
     return;
   }
-  const plays = CallParser.parseCall(text, ctx());
+  let plays = CallParser.parseCall(text, ctx());
+  // a breath with only a name ("Kai Bohmert") waits a few seconds for the play that follows ("live ball turnover, picked off")
+  const fresh = pendingWho && Date.now() - pendingWho.at < 9000;
+  if (plays.length && plays.every(p => !p.items.length) && plays.length === 1 && plays[0].who.length === 1) {
+    const p0 = plays[0];
+    pendingWho = { who: p0.who[0], squad: p0.squad, t: p0.time && p0.time.abs != null ? p0.time.abs : (p0.time && p0.time.rel != null ? Math.max(0, t0 + p0.time.rel) : t0), at: Date.now() };
+    $("lastResult").innerHTML = `<div class="result"><span class="note">Heard <b>${esc(p0.who[0])}</b> at ${fmtT(pendingWho.t)}. Say what he did.</span></div>`;
+    return;
+  }
+  if (fresh && plays.length) {
+    for (const p of plays) if (p.items.length && p.items.every(i => !i.p)) {
+      p.items.forEach(i => i.p = pendingWho.who); p.warns = p.warns.filter(w => !/No player|Which player/.test(w));
+      if (!p.time) p.time = { abs: pendingWho.t }; if (!p.squad) p.squad = pendingWho.squad; p.text = pendingWho.who + " · " + p.text;
+    }
+  }
+  pendingWho = null;
+  plays = plays.filter(p => p.items.length || p.warns.filter(w => w !== "No stat heard").length);
   if (!plays.length) { showResult(null, text); return }
   const v = currentVideo();
   const made = plays.map(p => {
