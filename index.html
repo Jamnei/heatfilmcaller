@@ -404,6 +404,12 @@ th.grp{background:var(--raise);color:var(--ink)}
   <p class="small" style="margin:0" id="clipNote">Click Watch to replay a play in its own window. Keep this list open and work down it.</p>
   <div class="cliplist" id="clipList"></div>
 </div></div>
+<div class="modal" id="mergeModal" hidden><div class="box" role="dialog" aria-labelledby="mergeTitle">
+  <h3 id="mergeTitle">Add to an existing session?</h3>
+  <p class="note" style="margin:0" id="mergeText"></p>
+  <select id="mergeTarget"></select>
+  <div class="row" style="justify-content:flex-end"><button class="btn" data-act="merge-separate">Keep separate</button><button class="btn primary" data-act="merge-add">Add to this session</button></div>
+</div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>/* ===== Call parser: turns a spoken or typed call into plays and stat items ===== */
@@ -860,7 +866,7 @@ const W0 = { steal: 3, charge: 3, tip: 1, pursuit: 2, you: 1, block: 1, wallup: 
 const WLAB = [["steal","Steal (auto)"],["charge","Charge"],["tip","Tip / deflection"],["pursuit","Ball pursuit"],["you","YOU"],["block","Block (auto)"],["wallup","WallUp"],["p6","Paint touch in 6"],["orebx","Offensive rebound (auto)"],["pt","Paint touch"],["rr","Right read"],["up","Upcycle"],["factor","HVP adjustment factor"]];
 const PERIODS = ["Q1","Q2","Q3","Q4","OT"];
 const PLAB = { Q1: "1st qtr", Q2: "2nd qtr", Q3: "3rd qtr", Q4: "4th qtr", OT: "OT", H1: "1st half", H2: "2nd half" };
-const VLABELS = ["Full game","1st half","2nd half","Q1","Q2","Q3","Q4","OT","Segment"];
+const VLABELS = ["Full game","1st half","2nd half","Q1 + Q2","Q3 + Q4","Q1","Q2","Q3","Q4","OT","Segment"];
 const LABEL_PERIOD = { "Q1": "Q1", "Q2": "Q2", "Q3": "Q3", "Q4": "Q4", "OT": "OT", "1st half": "H1", "2nd half": "H2" };
 const KNAME = { "2M":"2PT make","2X":"2PT miss","3M":"3PT make","3X":"3PT miss","FM":"FT make","FX":"FT miss","OR":"Off. rebound","DR":"Def. rebound","AS":"Assist","ST":"Steal","BK":"Block","TO":"Turnover","PF":"Foul","CH":"Charge","TP":"Tip","PU":"Pursuit","YO":"YOU","WU":"WallUp","P6":"Paint touch in 6","PT":"Paint touch","RR":"Right read","UP":"Upcycle" };
 const KCLS = { "2M":"mk","3M":"mk","FM":"mk","2X":"ms","3X":"ms","FX":"ms","CH":"hv","TP":"hv","PU":"hv","YO":"hv","WU":"hv","P6":"hv","PT":"hv","RR":"hv","UP":"hv","TO":"to" };
@@ -1550,7 +1556,9 @@ function saveForm() {
     const byVid = Object.fromEntries(d.videos.map(v => [v.id, v]));
     let moved = 0, orphan = 0, linked = 0;
     // plays brought in without a video (typed up from notes) attach to the first video added
-    if (d.videos.length) for (const p of d.plays) if (!p.vid) { p.vid = d.videos[0].id; linked++ }
+    const had = new Set((live.videos || []).map(v => v.id));
+    const target = d.videos.find(v => !had.has(v.id)) || (had.size === 0 ? d.videos[0] : null);
+    if (target) for (const p of d.plays) if (!p.vid) { p.vid = target.id; linked++ }
     for (const p of d.plays) {
       if (!p.vid || p.vid === "local") continue;
       const v = byVid[p.vid];
@@ -1558,7 +1566,7 @@ function saveForm() {
       const per = LABEL_PERIOD[v.label]; if (per && p.period !== per) { p.period = per; moved++ }
     }
     if (moved) msg = `Saved. ${moved} play${moved === 1 ? "" : "s"} moved to the new period.`;
-    if (linked) msg += ` ${linked} play${linked === 1 ? " is" : "s are"} now linked to ${esc(d.videos[0].label)} for replay.`;
+    if (linked) msg += ` ${linked} play${linked === 1 ? " is" : "s are"} now linked to ${esc(target.label)} for replay.`;
     if (orphan) msg += ` ${orphan} play${orphan === 1 ? " was" : "s were"} called on a video you removed; ${orphan === 1 ? "it keeps its" : "they keep their"} stats but lose the replay link.`;
     S.sessions[i] = Object.assign(live, d);
   }
@@ -1720,7 +1728,31 @@ function saveSessionFile(x) {
   const pack = { kind: "heat-film-session", v: 1, weights: x.shared ? (x.weights || S.weights) : S.weights, session: packSession(x) };
   download((x.name || "session").replace(/[^\w]+/g, "-") + (x.date ? "-" + x.date : "") + ".heatfilm.json", JSON.stringify(pack), "application/json");
 }
+let pendingImport = null;
+function addImportedSeparate(o, w) { pendingImport = { forced: true }; addImported(o, w) }  // the flag skips the merge question
+function mergeImport(targetId) {
+  const pi = pendingImport; pendingImport = null; $("mergeModal").hidden = true; if (!pi) return;
+  const t = S.sessions.find(q => q.id === targetId); if (!t) return;
+  const x = unpackSession(pi.o);
+  // keep incoming videos (new ids) and plays; plays without a video stay unlinked until a video is added
+  const idMap = {};
+  for (const v of x.videos) { const nv = Object.assign({}, v, { id: uid("v") }); idMap[v.id] = nv.id; t.videos = (t.videos || []).concat(nv) }
+  for (const p of x.plays) { if (p.vid) p.vid = idMap[p.vid] || p.vid; t.plays.push(p) }
+  Object.assign(t.squadOf = t.squadOf || {}, x.squadOf || {});
+  if (x.period) t.period = x.period;
+  S.cur = t.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo());
+  toast(`Added ${x.plays.length} plays to ${t.name}.${x.plays.some(p => !p.vid) ? " Add their YouTube link with Edit videos & squads." : ""}`);
+}
 function addImported(o, w) {
+  const same = S.sessions.filter(q => !q.shared && q.name.trim().toLowerCase() === String(o.name || "").trim().toLowerCase());
+  if (same.length && !pendingImport) {
+    pendingImport = { o, w };
+    const n = (o.plays || []).length;
+    $("mergeText").innerHTML = `You already have a session called <b>${esc(o.name)}</b>. Add these ${n} plays to it, or keep them as a separate session?`;
+    $("mergeTarget").innerHTML = same.map(q => `<option value="${q.id}">${esc(q.name)}${q.date ? " · " + esc(q.date) : ""} (${q.plays.length} plays)</option>`).join("");
+    $("mergeModal").hidden = false; return;
+  }
+  pendingImport = null;
   const x = unpackSession(o);
   if (S.sessions.some(q => !q.shared && q.name === x.name && q.date === x.date)) x.name += " (copy)";
   S.sessions.push(x); S.cur = x.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo());
@@ -1807,6 +1839,8 @@ document.addEventListener("click", e => {
     case "copy-link": copy($("shareLink").value); break;
     case "make-short": makeShort(); break;
     case "close-clips": $("clipModal").hidden = true; break;
+    case "merge-add": mergeImport($("mergeTarget").value); break;
+    case "merge-separate": { const pi = pendingImport; $("mergeModal").hidden = true; if (pi) addImportedSeparate(pi.o, pi.w); break }
     case "copy-summary": { const b2 = $("sumBox"); if (b2) copy([...b2.querySelectorAll("p")].map(p2 => p2.textContent).join("\n\n")); break }
     case "copy-short": if ($("shortLink").value) copy($("shortLink").value); break;
     case "check-short": checkShort(); break;
