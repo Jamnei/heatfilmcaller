@@ -110,6 +110,18 @@ textarea{width:100%;min-height:90px}
 
 /* tallies */
 .tallies{display:flex;flex-direction:column;gap:18px}
+.summary{background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.summary p{margin:0;max-width:110ch;line-height:1.55}
+.summary b{color:var(--ink)}
+.subgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-top:4px}
+.subgrid h4{margin:0 0 6px;font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+td.clip{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+td.clip:hover{background:var(--heat-soft);color:var(--ink)}
+td.l.clip{text-decoration:none}
+td.l.clip:hover{text-decoration:underline}
+.cliplist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.cliprow{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.cliprow .tx{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .tsec{display:flex;flex-direction:column;gap:6px}
 .tsec h3{margin:0;font:700 18px var(--display);letter-spacing:.06em;text-transform:uppercase}
 .tallyhead{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;justify-content:space-between}
@@ -184,7 +196,7 @@ th.grp{background:var(--raise);color:var(--ink)}
       <div class="card" style="gap:10px">
         <div class="row between">
           <div class="chips" id="vidChips"></div>
-          <div class="row"><button class="btn ghost" data-act="pick-file">Use a video file</button><input type="file" id="fileIn" accept="video/*" hidden></div>
+          <div class="row"><button class="btn" data-act="edit-current" id="editCurBtn">Edit videos &amp; squads</button><button class="btn ghost" data-act="pick-file">Use a video file</button><input type="file" id="fileIn" accept="video/*" hidden></div>
         </div>
         <div class="vidbox" id="vidbox">
           <div id="ytHost"></div>
@@ -272,6 +284,16 @@ th.grp{background:var(--raise);color:var(--ink)}
         </div>
       </div>
       <div class="card">
+        <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Short share links</h3>
+        <p class="note" style="margin:0">Lets the app save shared sessions into your GitHub repository by itself, so “Create short link” is one click. Needs a GitHub access key that can only change this one repository. The key stays in this browser; it is never put in the page, in backups or in share links.</p>
+        <div class="form">
+          <div class="field"><label class="label" for="ghRepo">Repository</label><input id="ghRepo" placeholder="jamnei/heatfilmcaller"></div>
+          <div class="field"><label class="label" for="ghTok">GitHub access key</label><input id="ghTok" type="password" autocomplete="off" placeholder="github_pat_…"></div>
+        </div>
+        <div class="row"><button class="btn" data-act="gh-save">Save and test</button><button class="btn ghost" data-act="gh-forget">Remove key</button><span class="note" id="ghMsg"></span></div>
+        <span class="small">Without a key, “Create short link” downloads a small file instead; you put it in the <b>s</b> folder of your heatfilmcaller repository and Commit and Push in GitHub Desktop.</span>
+      </div>
+      <div class="card">
         <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">Backup</h3>
         <p class="note" style="margin:0">Everything is saved in this browser. Download a backup to move it to another computer or keep a copy.</p>
         <div class="row"><button class="btn" data-act="backup">Download backup</button><button class="btn" data-act="restore">Restore from backup</button><input type="file" id="restoreIn" accept=".json,application/json" hidden></div>
@@ -351,14 +373,26 @@ th.grp{background:var(--raise);color:var(--ink)}
 <div class="modal" id="shareModal" hidden><div class="box" role="dialog" aria-labelledby="shareTitle">
   <h3 id="shareTitle">Share this session</h3>
   <p class="note" style="margin:0" id="shareWhat"></p>
-  <div class="field"><span class="label">Share link</span><textarea id="shareLink" readonly></textarea>
-    <div class="row"><button class="btn primary" data-act="copy-link">Copy link</button><span class="small" id="shareSize"></span></div>
+  <div class="field"><span class="label">Short link</span>
+    <div class="row"><button class="btn primary" data-act="make-short" id="shortBtn">Create short link</button><span class="small" id="shortMode"></span></div>
+    <div id="shortOut" hidden style="display:flex;flex-direction:column;gap:6px">
+      <input id="shortLink" readonly style="font:600 15px ui-monospace,Menlo,Consolas,monospace">
+      <div class="row"><button class="btn" data-act="copy-short">Copy short link</button><button class="btn ghost" data-act="check-short">Check it works</button><span class="small" id="shortMsg"></span></div>
+      <div class="small" id="shortSteps"></div>
+    </div></div>
+  <div class="field"><span class="label">Long link (works straight away)</span><textarea id="shareLink" readonly style="min-height:60px"></textarea>
+    <div class="row"><button class="btn" data-act="copy-link">Copy long link</button><span class="small" id="shareSize"></span></div>
     <span class="small">Paste it into an email or text. A coach who opens it sees the video, the play-by-play with replay links, and all four tables. Nothing is installed, and nothing they do changes your copy.</span></div>
   <div class="field"><span class="label">Session file</span>
     <div class="row"><button class="btn" data-act="save-file">Download session file</button></div>
     <span class="small">A small file to attach to an email. Coaches open it with <b>Sessions → Open a session file</b> in their copy of the app, and it's added to their sessions.</span></div>
   <span class="small">The YouTube videos must be Public or Unlisted for other coaches to watch them. Private videos only play for the account that uploaded them.</span>
   <div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-share">Done</button></div>
+</div></div>
+<div class="modal" id="clipModal" hidden><div class="box" role="dialog" aria-labelledby="clipTitle">
+  <div class="row between"><h3 id="clipTitle">Clips</h3><button class="btn" data-act="close-clips">Close</button></div>
+  <p class="small" style="margin:0" id="clipNote">Click Watch to replay a play in its own window. Keep this list open and work down it.</p>
+  <div class="cliplist" id="clipList"></div>
 </div></div>
 <div class="toast" id="toast" hidden></div>
 
@@ -919,25 +953,55 @@ $("fileIn").addEventListener("change", e => {
 /* ===================== SPEECH ===================== */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false, uttStart = null;
-function startMic() {
-  if (!SR) { toast("Voice needs Chrome or Edge on a computer. You can still type calls."); return }
-  rec = new SR(); rec.continuous = true; rec.interimResults = true; rec.lang = S.lang; rec.maxAlternatives = 5;
-  // Chrome versions that support phrase hints get the HVP vocabulary as a nudge
-  try { if (window.SpeechRecognitionPhrase && "phrases" in rec) rec.phrases = ["right read", "upcycle", "paint touch", "paint touch in six", "wall up", "pursuit", "charge", "deflection"].map(t => new SpeechRecognitionPhrase(t, 5)) } catch (e) {}
-  rec.onresult = (e) => {
+const MIC = { gen: 0, lastEvent: 0, quickEnds: 0, startedAt: 0, lastErr: "" };
+function micStatus(t) { if (listening) $("heard").textContent = t }
+function newRecognizer() {
+  const gen = ++MIC.gen;
+  const r = new SR(); r.continuous = true; r.interimResults = true; r.lang = S.lang; r.maxAlternatives = 5;
+  const mine = () => gen === MIC.gen;   // ignore events from a recognizer we've already replaced
+  r.onstart = () => { if (!mine()) return; MIC.lastEvent = Date.now(); MIC.startedAt = Date.now(); micStatus("Listening… say a call") };
+  r.onaudiostart = () => { if (!mine()) return; MIC.lastEvent = Date.now() };
+  r.onspeechstart = () => { if (!mine()) return; MIC.lastEvent = Date.now(); micStatus("Hearing you…") };
+  r.onresult = (e) => {
+    if (!mine()) return; MIC.lastEvent = Date.now(); MIC.quickEnds = 0; MIC.lastErr = "";
     let interim = "", fin = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) fin += bestAlternative(r) + " "; else interim += r[0].transcript + " " }
+    for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += bestAlternative(x) + " "; else interim += x[0].transcript + " " }
     if (uttStart == null && (interim || fin)) uttStart = now();
-    $("heard").textContent = (fin || interim).trim() ? "Heard: " + (fin || interim).trim() : $("heard").textContent;
+    if ((fin || interim).trim()) $("heard").textContent = "Heard: " + (fin || interim).trim();
     if (fin.trim()) { const t = uttStart ?? now(); uttStart = null; handleCall(fin.trim(), t, "voice") }
   };
-  rec.onerror = (e) => {
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") { listening = false; micUI(); toast("The browser blocked the microphone. Allow it in the address bar and try again.") }
+  r.onerror = (e) => {
+    if (!mine()) return; MIC.lastEvent = Date.now(); MIC.lastErr = e.error || "";
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") { stopMic(); toast("Chrome blocked the microphone for this page. Click the icon at the left of the address bar, allow Microphone, and reload.") }
+    else if (e.error === "audio-capture") { stopMic(); toast("No microphone was found, or another app is using it. Check the microphone, then click the mic again.") }
+    else if (e.error === "network") micStatus("Lost the connection to Chrome's speech service. Reconnecting…");
   };
-  rec.onend = () => { if (listening) setTimeout(() => { try { rec.start() } catch (e) {} }, 200) };
-  try { rec.start(); listening = true } catch (e) { listening = false }
+  r.onend = () => {
+    if (!mine() || !listening) return;
+    MIC.lastEvent = Date.now();
+    const quick = Date.now() - MIC.startedAt < 1500; MIC.quickEnds = quick ? MIC.quickEnds + 1 : 0;
+    if (MIC.quickEnds >= 8) {
+      stopMic();
+      $("heard").textContent = "The microphone keeps stopping" + (MIC.lastErr ? " (" + MIC.lastErr + ")" : "") + ". Close any other tab using this app or the microphone, then click the mic again.";
+      return;
+    }
+    setTimeout(() => { if (listening && mine()) { rec = newRecognizer(); try { rec.start() } catch (e) {} } }, quick ? Math.min(3000, 300 * MIC.quickEnds) : 150);
+  };
+  return r;
+}
+function startMic() {
+  if (!SR) { toast("Voice needs Chrome or Edge on a computer. You can still type calls."); return }
+  try { rec && rec.abort() } catch (e) {}
+  MIC.quickEnds = 0; MIC.lastErr = ""; listening = true;
+  rec = newRecognizer();
+  try { rec.start() } catch (e) { listening = false; toast("The microphone couldn't start. Click it again.") }
   micUI();
 }
+// a recognizer that has gone quiet for a long time is replaced, which clears the stalls Chrome sometimes gets into
+setInterval(() => {
+  if (!listening || !rec) return;
+  if (Date.now() - MIC.lastEvent > 45000) { MIC.gen++; try { rec.abort() } catch (e) {} rec = newRecognizer(); try { rec.start() } catch (e) {} }
+}, 5000);
 // Chrome offers several guesses for each phrase; keep the one that makes the most sense as a call
 function bestAlternative(r) {
   let best = r[0].transcript, bestScore = -1e9;
@@ -950,10 +1014,10 @@ function bestAlternative(r) {
   }
   return best;
 }
-function stopMic() { listening = false; try { rec && rec.stop() } catch (e) {} uttStart = null; micUI() }
+function stopMic() { listening = false; MIC.gen++; try { rec && rec.abort() } catch (e) {} rec = null; uttStart = null; micUI() }
 function micUI() {
   const b = $("micBtn"); b.classList.toggle("on", listening); b.setAttribute("aria-label", listening ? "Stop listening" : "Start listening");
-  if (listening) $("heard").textContent = "Listening…";
+  if (listening) $("heard").textContent = "Starting the microphone…";
 }
 if (!SR) { $("micBtn").title = "Voice needs Chrome or Edge on a computer"; $("micBtn").style.opacity = .5 }
 
@@ -1040,6 +1104,7 @@ function renderPBP() {
       <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}<span class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
       <div class="bd"><div class="row" style="gap:5px">${p.squad || sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(p.squad || sqOfPlay(p))}" title="${esc(p.squad || sqOfPlay(p))}"></span>` : ""}${p.items.map(i => itemTag(i)).join("")}</div>
         ${p.warns.length ? `<div class="warn">${esc(p.warns.join(" · "))}</div>` : ""}
+        ${(() => { const s0 = cur(); if (!s0 || s0.type !== "Scrimmage" || viewOnly() || p.squad) return ""; const need = [...new Set(p.items.map(i => i.p).filter(n => n && !(s0.squadOf || {})[n]))]; return need.map(n => `<div class="row" style="gap:4px"><span class="warn" style="font-size:12px">${esc(short(n))} has no squad:</span>${S.squads.map(q => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="set-squad" data-p="${esc(n)}" data-q="${esc(q)}"><span class="sw" style="background:${sqColor(q)}"></span> ${esc(q)}</button>`).join("")}</div>`).join("") })()}
         ${unresolved && !viewOnly() ? `<div class="row"><span class="small">Give it to</span><select data-act="assign" data-id="${p.id}"><option value="">Choose player</option>${S.roster.filter(r => r.name).map(r => `<option>${esc(r.name)}</option>`).join("")}</select></div>` : ""}
         <div class="tx">“${esc(p.text)}”</div></div>
       <div class="acts" ${viewOnly() ? "hidden" : ""}><button class="ib" data-act="edit" data-id="${p.id}" title="Edit">Edit</button><button class="ib ${armed === p.id ? "armed" : ""}" data-act="del" data-id="${p.id}" title="Delete">${armed === p.id ? "Delete" : "✕"}</button></div>
@@ -1130,24 +1195,192 @@ const NOTES = {
   shot: "Field goals only. Gold: at the rim. Silver: catch-and-shoot threes. Bronze: mid-range, off-the-dribble threes, floaters. Red: shots we don't want.",
 };
 const SECTIONS = [["box", "Box score"], ["hvp", "HVP"], ["to", "Turnovers"], ["shot", "Shot quality"]];
+const isShot = it => /^[23][MX]$/.test(it.k);
+const isMake = it => it.k === "2M" || it.k === "3M";
+const HVPK = ["ST", "CH", "TP", "PU", "YO", "BK", "WU", "P6", "OR", "PT", "RR", "UP"];
+const kf = (...ks) => it => ks.includes(it.k);
+// what each column's clips are: the plays behind the number
+const CLIPF = {
+  box: [it => isMake(it) || it.k === "FM", isShot, isShot, kf("3M", "3X"), kf("3M", "3X"), kf("FM", "FX"), kf("FM", "FX"), kf("OR"), kf("DR"), kf("OR", "DR"), kf("AS"), kf("ST"), kf("BK"), kf("TO"), kf("PF"), null],
+  hvp: [kf("ST"), kf("CH"), kf("TP"), kf("PU"), kf("YO"), kf("BK"), kf("WU"), kf("ST", "CH", "TP", "PU", "YO", "BK", "WU"), kf("P6"), kf("OR"), kf("PT"), kf("RR"), kf("UP"), kf("P6", "OR", "PT", "RR", "UP"), it => HVPK.includes(it.k), it => HVPK.includes(it.k), null, null],
+  to: [kf("TO"), it => it.k === "TO" && it.toType === "Passing", it => it.k === "TO" && it.toType === "Handling", it => it.k === "TO" && it.toType === "Violation", it => it.k === "TO" && it.toType === "Rushed", it => it.k === "TO" && !it.toType, it => it.k === "TO" && it.ball === "Live", it => it.k === "TO" && it.ball === "Dead", it => it.k === "TO" && !it.ball, it => it.k === "TO" && it.ball === "Live"],
+  shot: [isShot, it => isShot(it) && it.tier === "Gold", it => isShot(it) && it.tier === "Gold", it => isShot(it) && it.tier === "Silver", it => isShot(it) && it.tier === "Silver", it => isShot(it) && it.tier === "Bronze", it => isShot(it) && it.tier === "Bronze", it => isShot(it) && it.tier === "Red", it => isShot(it) && it.tier === "Red", it => isShot(it) && !it.tier, it => isShot(it) && (it.tier === "Gold" || it.tier === "Silver")],
+};
+const SECALL = { box: it => true, hvp: it => HVPK.includes(it.k), to: kf("TO"), shot: isShot };
+// clip filters used by the summary tables
+const XF = {};
+let xfN = 0;
+function xf(fn) { const k = "x" + (xfN++); XF[k] = fn; return k }
+function zero(v) { return v === 0 || v === "0-0" || v === "–" || v === "0.0" || v === "0%" }
+function cell(v, cls, clipAttr) { const z = zero(v); return `<td class="${cls || ""} ${z ? "z" : ""} ${clipAttr && !z ? "clip" : ""}" ${clipAttr && !z ? clipAttr : ""}>${esc(v)}</td>` }
+function who(kind, val) { return kind === "p" ? `data-pl="${esc(val)}"` : kind === "q" ? `data-sqn="${esc(val)}"` : `data-all="1"` }
+function itemsInView() {
+  const s = cur(); const out = [];
+  for (const p of s.plays) for (const it of p.items) { const q = itemSquad(p, it); if (sqFilter !== "All" && q !== sqFilter) continue; out.push({ p, it, q }) }
+  return out;
+}
+function teamLabel() { return sqFilter !== "All" ? sqFilter : (cur().type === "Scrimmage" ? "Everyone" : "The Heat") }
+
+/* ---------- written summary ---------- */
+function nm(n) { return n.replace(/\s*\(.*?\)\s*/g, " ").trim() }
+function first(n) { return nm(n).split(" ")[0] }
+function listJoin(a) { return a.length <= 1 ? (a[0] || "") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1] }
+function writeSummary(T) {
+  const s = cur(); const rows = T.rows.filter(r => r.L.n);
+  if (!rows.length) return "";
+  const t = T.tot; const w = W(); const P = [];
+  // headline
+  let head = "";
+  if (s.type === "Scrimmage" && sqFilter === "All" && T.sq.length >= 2) {
+    const sq = T.sq.slice().sort((a, b) => b.L.pts - a.L.pts);
+    head = `${listJoin(sq.map(q => `${q.name} ${q.L.pts}`))} on the scoreboard. `;
+  }
+  const subj = sqFilter !== "All" ? `${sqFilter}` : (s.type === "Scrimmage" ? "Across all squads, players" : "The Heat");
+  head += `${subj} shot ${t.fgm} of ${t.fga} from the field${t.tpa ? ` (${t.tpm} of ${t.tpa} from three)` : ""}${t.fta ? `, ${t.ftm} of ${t.fta} at the line` : ""}, with ${t.ast} assist${t.ast === 1 ? "" : "s"}, ${t.to} turnover${t.to === 1 ? "" : "s"} and ${t.raw} raw HVP points.`;
+  P.push(head);
+  // standouts by combined score
+  const byC = rows.slice().sort((a, b) => b.L.cmb - a.L.cmb);
+  const top = byC[0];
+  const why = L => { const bits = []; if (L.pts) bits.push(`${L.pts} point${L.pts === 1 ? "" : "s"} on ${L.fgm} of ${L.fga} shooting`); if (L.reb >= 2) bits.push(`${L.reb} rebounds`); if (L.ast >= 2) bits.push(`${L.ast} assists`); if (L.stl) bits.push(`${L.stl} steal${L.stl === 1 ? "" : "s"}`); if (L.raw) bits.push(`${L.raw} raw HVP`); return listJoin(bits) };
+  let st = `<b>${esc(nm(top.name))}</b> led the session with a combined score of ${n1(top.L.cmb)} (EFF ${top.L.eff}, adjusted HVP ${n1(top.L.adj)})${why(top.L) ? `, built on ${why(top.L)}` : ""}.`;
+  const next = byC.slice(1, 3).filter(r => r.L.cmb > 0);
+  if (next.length) st += ` ${listJoin(next.map(r => `<b>${esc(nm(r.name))}</b> (${n1(r.L.cmb)})`))} ${next.length === 1 ? "was" : "were"} next.`;
+  P.push(st);
+  // scoring and hustle leaders when different
+  const scorer = rows.slice().sort((a, b) => b.L.pts - a.L.pts)[0];
+  const hv = rows.slice().sort((a, b) => b.L.raw - a.L.raw)[0];
+  const extra = [];
+  if (scorer.L.pts && scorer.name !== top.name) extra.push(`${esc(first(scorer.name))} was the top scorer with ${scorer.L.pts}`);
+  if (hv.L.raw && hv.name !== top.name) {
+    const parts = [["steals", hv.L.stl * w.steal], ["charges", hv.L.ch * w.charge], ["tips", hv.L.tp * w.tip], ["ball pursuit", hv.L.pu * w.pursuit], ["YOU plays", hv.L.yo * w.you], ["blocks", hv.L.blk * w.block], ["wall-ups", hv.L.wu * w.wallup], ["paint touches in 6", hv.L.p6 * w.p6], ["offensive rebounds", hv.L.or * w.orebx], ["paint touches", hv.L.pt * w.pt], ["right reads", hv.L.rr * w.rr], ["upcycles", hv.L.up * w.up]].filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+    extra.push(`${esc(first(hv.name))} piled up the most effort points with ${hv.L.raw} raw HVP${parts.length ? `, mostly from ${listJoin(parts.slice(0, 2).map(x => x[0]))}` : ""}`);
+  }
+  if (extra.length) P.push(extra.join(", and ") + ".");
+  // shot quality
+  const graded = t.ga + t.sa + t.ba + t.ra;
+  if (graded >= 3) {
+    const pps = (m3, m2, a) => a ? ((m3 * 3 + m2 * 2) / a) : 0;
+    let q = `${Math.round((t.ga + t.sa) / graded * 100)}% of graded shots were Gold or Silver`;
+    if (t.ra) {
+      const reds = rows.filter(r => r.L.ra).sort((a, b) => b.L.ra - a.L.ra);
+      if (t.ra === 1) q += `; the one Red shot was ${esc(first(reds[0].name))}'s`;
+      else q += `; ${t.ra} Red shots went up, ${reds[0].L.ra === t.ra ? "all" : reds[0].L.ra} of them by ${esc(first(reds[0].name))}`;
+    } else q += ", with no Red shots";
+    if (t.ga) q += `. Gold shots went ${t.gm} for ${t.ga}`;
+    P.push(q + ".");
+  }
+  // turnovers
+  if (t.to) {
+    const types = [["passing", t.pa], ["ball handling", t.ha], ["violations", t.vi], ["rushed decisions", t.ru]].filter(x => x[1]).sort((a, b) => b[1] - a[1]);
+    let tt = `${t.to} turnover${t.to === 1 ? "" : "s"}${t.live ? `, ${t.live} of them live-ball` : ""}`;
+    if (types.length) tt += `; ${types[0][0]} caused the most (${types[0][1]})`;
+    const worst = rows.filter(r => r.L.to >= 2).sort((a, b) => b.L.to - a.L.to);
+    if (worst.length) tt += `. ${listJoin(worst.slice(0, 2).map(r => `${esc(first(r.name))} had ${r.L.to}`))}, worth a look on film`;
+    P.push(tt.charAt(0).toUpperCase() + tt.slice(1) + ".");
+  }
+  return P.map(x => `<p>${x}</p>`).join("");
+}
+
+/* ---------- shot and turnover breakdowns ---------- */
+function shotBreakdown(T) {
+  const all = itemsInView().filter(x => isShot(x.it));
+  if (!all.length) return "";
+  const tiers = ["Gold", "Silver", "Bronze", "Red", null];
+  const tot = all.length;
+  const row = (label, f) => { const xs = all.filter(x => f(x.it)); const a = xs.length, m = xs.filter(x => isMake(x.it)).length, pts = xs.reduce((s2, x) => s2 + (x.it.k === "3M" ? 3 : x.it.k === "2M" ? 2 : 0), 0); const k = xf(f);
+    return `<tr><td class="l">${label}</td>${cell(a, "", `data-clip="${k}" data-all="1"`)}${cell(tot ? Math.round(a / tot * 100) + "%" : "–")}${cell(m, "", `data-clip="${xf(it => f(it) && isMake(it))}" data-all="1"`)}${cell(pct(m, a))}${cell(pts)}${cell(a ? (pts / a).toFixed(2) : "–", "hl")}</tr>` };
+  let h = `<div><h4>By tier</h4><div class="tbl"><table><thead><tr><th class="l">Tier</th><th>Att</th><th>Share</th><th>Made</th><th>FG%</th><th>Pts</th><th>Pts / shot</th></tr></thead><tbody>`;
+  h += tiers.map(tr => row(tr ? `<span class="tier t-${tr}"></span> ${tr}` : "Not graded", it => isShot(it) && (it.tier || null) === tr)).join("");
+  h += row("<b>All shots</b>", isShot).replace("<tr>", '<tr class="tot">') + `</tbody></table></div></div>`;
+  const types = [...new Set(all.map(x => x.it.stype || "Type not said"))];
+  const tierOf = {}; all.forEach(x => { if (x.it.stype && x.it.tier) tierOf[x.it.stype] = tierOf[x.it.stype] || x.it.tier });
+  const trows = types.map(ty => { const f = it => isShot(it) && (it.stype || "Type not said") === ty; const xs = all.filter(x => f(x.it)); return { ty, f, a: xs.length, m: xs.filter(x => isMake(x.it)).length, pts: xs.reduce((s2, x) => s2 + (x.it.k === "3M" ? 3 : x.it.k === "2M" ? 2 : 0), 0) } }).sort((a, b) => b.a - a.a);
+  h += `<div><h4>By shot type</h4><div class="tbl"><table><thead><tr><th class="l">Shot type</th><th>Att</th><th>Made</th><th>FG%</th><th>Pts / shot</th></tr></thead><tbody>` +
+    trows.map(r => `<tr><td class="l">${tierOf[r.ty] ? `<span class="tier t-${tierOf[r.ty]}"></span> ` : ""}${esc(r.ty)}</td>${cell(r.a, "", `data-clip="${xf(r.f)}" data-all="1"`)}${cell(r.m, "", `data-clip="${xf(it => r.f(it) && isMake(it))}" data-all="1"`)}${cell(pct(r.m, r.a))}${cell(r.a ? (r.pts / r.a).toFixed(2) : "–", "hl")}</tr>`).join("") + `</tbody></table></div></div>`;
+  return `<div class="subgrid">${h}</div><div class="small">Points per shot counts field goals only (2 or 3 per make). It shows whether better-graded shots are paying off.</div>`;
+}
+function toBreakdown(T) {
+  const all = itemsInView().filter(x => x.it.k === "TO");
+  if (!all.length) return "";
+  const t = T.tot; const n = all.length;
+  const poss = t.fga - t.or + t.to + 0.44 * t.fta;
+  let h = `<div><h4>By type</h4><div class="tbl"><table><thead><tr><th class="l">Type</th><th>TOs</th><th>Share</th><th>Live</th><th>Dead</th></tr></thead><tbody>`;
+  for (const ty of ["Passing", "Handling", "Violation", "Rushed", null]) {
+    const f = it => it.k === "TO" && (it.toType || null) === ty; const xs = all.filter(x => f(x.it)); if (!xs.length && !ty) continue;
+    h += `<tr><td class="l">${ty || "Type not said"}</td>${cell(xs.length, "hl", `data-clip="${xf(f)}" data-all="1"`)}${cell(Math.round(xs.length / n * 100) + "%")}${cell(xs.filter(x => x.it.ball === "Live").length, "", `data-clip="${xf(it => f(it) && it.ball === "Live")}" data-all="1"`)}${cell(xs.filter(x => x.it.ball === "Dead").length, "", `data-clip="${xf(it => f(it) && it.ball === "Dead")}" data-all="1"`)}</tr>`;
+  }
+  h += `</tbody></table></div></div>`;
+  const pers = [...new Set(all.map(x => x.p.period || "–"))].sort((a, b) => (PERIODS.concat(["H1", "H2"]).indexOf(a)) - (PERIODS.concat(["H1", "H2"]).indexOf(b)));
+  h += `<div><h4>By period</h4><div class="tbl"><table><thead><tr><th class="l">Period</th><th>TOs</th><th>Live</th><th>Passing</th><th>Handling</th><th>Violation</th><th>Rushed</th></tr></thead><tbody>` +
+    pers.map(pe => { const inP = x => (x.p.period || "–") === pe; const xs = all.filter(inP); const sub = ty => xs.filter(x => x.it.toType === ty).length;
+      const ids = new Set(xs.map(x => x.it));
+      const mk = f => xf(it => ids.has(it) && f(it));
+      return `<tr><td class="l">${esc(PLAB[pe] || pe)}</td>${cell(xs.length, "hl", `data-clip="${mk(() => true)}" data-all="1"`)}${cell(xs.filter(x => x.it.ball === "Live").length, "", `data-clip="${mk(it => it.ball === "Live")}" data-all="1"`)}${["Passing", "Handling", "Violation", "Rushed"].map(ty => cell(sub(ty), "", `data-clip="${mk(it => it.toType === ty)}" data-all="1"`)).join("")}</tr>` }).join("") + `</tbody></table></div></div>`;
+  const det = {}; all.forEach(x => { const d = x.it.detail; if (d) d.split(", ").forEach(k => det[k] = (det[k] || 0) + 1) });
+  const dets = Object.entries(det).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  if (dets.length) h += `<div><h4>Most common details</h4><div class="tbl"><table><thead><tr><th class="l">Detail</th><th>TOs</th></tr></thead><tbody>` + dets.map(([d, c]) => `<tr><td class="l">${esc(d)}</td>${cell(c, "hl", `data-clip="${xf(it => it.k === "TO" && (it.detail || "").split(", ").includes(d))}" data-all="1"`)}</tr>`).join("") + `</tbody></table></div></div>`;
+  const rate = poss > 0 ? (t.to / poss * 100).toFixed(1) + "%" : "–";
+  return `<div class="subgrid">${h}</div><div class="small">Turnover rate (TOV%) ${sqFilter !== "All" ? "for " + esc(sqFilter) : cur().type === "Scrimmage" ? "for all squads combined" : "for the Heat"}: <b>${rate}</b> of possessions, using possessions ≈ FGA − OREB + TOV + 0.44 × FTA (Dean Oliver). Live-ball share: ${pct(t.live, t.to)}%.</div>`;
+}
+
 function renderTally() {
   const s = cur(); if (!s) return;
   const scr = s.type === "Scrimmage";
   if (!scr) sqFilter = "All";
   $("sqFilter").innerHTML = scr ? ["All", ...S.squads].map(q => `<button class="chip" data-sq="${esc(q)}" aria-pressed="${sqFilter === q}">${q !== "All" ? `<span class="sw" style="background:${sqColor(q)}"></span> ` : ""}${esc(q)}</button>`).join("") : "";
+  for (const k in XF) delete XF[k]; xfN = 0;
   const T = tallies();
-  const td = (v, cls) => `<td class="${cls || ""} ${v === 0 || v === "0-0" || v === "–" || v === "0.0" ? "z" : ""}">${esc(v)}</td>`;
-  $("tallies").innerHTML = SECTIONS.map(([key, title]) => {
-    const cols = COLS[key];
+  const summary = writeSummary(T);
+  let out = summary ? `<section class="summary" id="sumBox"><div class="row between"><h3 style="margin:0;font:700 18px var(--display);letter-spacing:.06em;text-transform:uppercase">Session summary${sqFilter !== "All" ? " · " + esc(sqFilter) : ""}</h3><button class="btn ghost" data-act="copy-summary" style="min-height:32px">Copy</button></div>${summary}<span class="small">Click any underlined number in the tables below to list and replay the plays behind it.</span></section>` : "";
+  out += SECTIONS.map(([key, title]) => {
+    const cols = COLS[key], fs = CLIPF[key];
+    const rowCells = (L, whoAttr) => cols.map((c, ci) => cell(c[1](L), c[2], fs[ci] ? `data-clip="${key}:${ci}" ${whoAttr}` : "")).join("");
     let h = `<thead><tr><th class="l">Player</th>${scr ? "<th>Squad</th>" : ""}${cols.map(c => `<th>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>`;
-    h += T.rows.length ? T.rows.map(r => `<tr><td class="l">${esc(r.name)}</td>${scr ? `<td>${r.sq ? `<span class="sw" style="background:${sqColor(r.sq)}"></span>` : ""}</td>` : ""}${cols.map(c => td(c[1](r.L), c[2])).join("")}</tr>`).join("")
+    h += T.rows.length ? T.rows.map(r => `<tr><td class="l ${r.L.n ? "clip" : ""}" data-clip="${key}:all" ${who("p", r.name)} title="List ${esc(r.name)}'s plays">${esc(r.name)}</td>${scr ? `<td>${r.sq ? `<span class="sw" style="background:${sqColor(r.sq)}"></span>` : ""}</td>` : ""}${rowCells(r.L, who("p", r.name))}</tr>`).join("")
       : `<tr><td class="l" colspan="${cols.length + 2}" style="color:var(--muted);font-weight:500">No plays yet${sqFilter !== "All" ? " for " + esc(sqFilter) : ""}.</td></tr>`;
-    if (scr && sqFilter === "All") h += T.sq.map(q => `<tr class="sq"><td class="l">${esc(q.name)} total</td><td><span class="sw" style="background:${sqColor(q.name)}"></span></td>${cols.map(c => td(c[1](q.L))).join("")}</tr>`).join("");
-    h += `<tr class="tot"><td class="l">${scr && sqFilter !== "All" ? esc(sqFilter) + " total" : "Session total"}</td>${scr ? "<td></td>" : ""}${cols.map(c => td(c[1](T.tot))).join("")}</tr></tbody>`;
+    if (scr && sqFilter === "All") h += T.sq.map(q => `<tr class="sq"><td class="l">${esc(q.name)} total</td><td><span class="sw" style="background:${sqColor(q.name)}"></span></td>${rowCells(q.L, who("q", q.name))}</tr>`).join("");
+    h += `<tr class="tot"><td class="l">${scr && sqFilter !== "All" ? esc(sqFilter) + " total" : "Session total"}</td>${scr ? "<td></td>" : ""}${rowCells(T.tot, sqFilter !== "All" ? who("q", sqFilter) : who("a"))}</tr></tbody>`;
     const n = NOTES[key];
+    const extra = key === "shot" ? shotBreakdown(T) : key === "to" ? toBreakdown(T) : "";
     return `<section class="tsec"><div class="row between"><h3>${esc(title)}</h3><button class="btn ghost" data-act="copy-table" data-t="${key}" style="min-height:32px">Copy</button></div>
-      <div class="tbl"><table id="tbl-${key}">${h}</table></div><div class="small">${esc(typeof n === "function" ? n() : n)}</div></section>`;
+      <div class="tbl"><table id="tbl-${key}">${h}</table></div><div class="small">${esc(typeof n === "function" ? n() : n)}</div>${extra}</section>`;
   }).join("");
+  $("tallies").innerHTML = out;
+}
+
+/* ---------- clip review ---------- */
+function openClips(el) {
+  const s = cur(); if (!s) return;
+  const spec = el.dataset.clip; let f, label;
+  if (XF[spec]) { f = XF[spec]; const tr = el.closest("tr"); const th = el.closest("table").querySelectorAll("thead th")[[...tr.children].indexOf(el)]; label = tr.children[0].textContent.trim() + (th ? " · " + th.textContent.trim() : "") }
+  else {
+    const [key, ci] = spec.split(":");
+    f = ci === "all" ? SECALL[key] : CLIPF[key][+ci];
+    const secName = (SECTIONS.find(x => x[0] === key) || [, ""])[1];
+    label = ci === "all" ? secName : COLS[key][+ci][0];
+  }
+  if (!f) return;
+  const pl = el.dataset.pl, sqn = el.dataset.sqn;
+  const vids = Object.fromEntries((s.videos || []).map(v => [v.id, v]));
+  const hits = new Map();
+  for (const x of itemsInView()) {
+    if (pl && x.it.p !== pl) continue;
+    if (sqn && x.q !== sqn) continue;
+    if (!f(x.it)) continue;
+    if (!hits.has(x.p)) hits.set(x.p, []); hits.get(x.p).push(x.it);
+  }
+  const order = ["Q1", "H1", "Q2", "Q3", "H2", "Q4", "OT"];
+  const list = [...hits.entries()].sort((a, b) => (order.indexOf(a[0].period) - order.indexOf(b[0].period)) || (a[0].t - b[0].t));
+  const whoTxt = pl ? nm(pl) : sqn ? sqn : teamLabel();
+  $("clipTitle").textContent = `${whoTxt} · ${label} (${list.length})`;
+  $("clipList").innerHTML = list.length ? list.map(([p, its]) => {
+    const yl = p.vid && vids[p.vid] ? ytLink(vids[p.vid].url, p.t - S.leadIn) : null;
+    const vl = p.vid && vids[p.vid] ? vids[p.vid].label : "";
+    return `<div class="cliprow"><div><div class="tlink" style="text-decoration:none">${fmtT(p.t)}</div><div class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</div></div>
+      <div><div class="row" style="gap:5px">${its.map(i => itemTag(i)).join("")}</div><div class="tx">“${esc(p.text)}”</div></div>
+      ${yl ? `<a class="btn primary" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" style="display:inline-flex;align-items:center;text-decoration:none">Watch</a>` : `<span class="small">No video</span>`}</div>`;
+  }).join("") : `<div class="note" style="padding:12px 0">No plays.</div>`;
+  $("clipModal").hidden = false;
 }
 function tableTSV(key) {
   return [...$("tbl-" + key).querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent.trim()).join("\t")).join("\n");
@@ -1189,7 +1422,7 @@ function renderCall() {
 }
 function renderShareBar() {
   const s = cur(); const vo = !!(s && s.shared);
-  document.querySelectorAll(".callbar, #preview, #lastResult, .pbpcard [data-act='undo']").forEach(el => el.hidden = vo);
+  document.querySelectorAll(".callbar, #preview, #lastResult, .pbpcard [data-act='undo'], #editCurBtn").forEach(el => el.hidden = vo);
   let bar = $("shareBar");
   if (!bar) { bar = document.createElement("div"); bar.id = "shareBar"; bar.className = "sharebar"; const card = document.querySelector(".pbpcard"); card.insertBefore(bar, card.firstChild) }
   bar.hidden = !vo;
@@ -1217,7 +1450,7 @@ function renderSessions() {
 function renderForm() {
   const f = $("sessForm"); if (!formDraft) { f.hidden = true; return }
   f.hidden = false; const d = formDraft;
-  f.innerHTML = `<div class="row between"><span class="label">${d._new ? "New session" : "Edit session"}</span><button class="btn ghost" data-act="cancel-form">Cancel</button></div>
+  f.innerHTML = `<div class="row between"><span class="label">${d._new ? "New session" : "Edit session · change names, video labels, links and squads at any time"}</span><button class="btn ghost" data-act="cancel-form">Cancel</button></div>
   <div class="form">
     <div class="field"><label class="label" for="fName">Name</label><input id="fName" value="${esc(d.name)}" placeholder="Heat v TRU"></div>
     <div class="field"><label class="label" for="fDate">Date</label><input id="fDate" type="date" value="${esc(d.date)}"></div>
@@ -1231,7 +1464,7 @@ function renderForm() {
   </div>
   ${d.type === "Scrimmage" ? `<div class="field"><span class="label">Squads</span><span class="small">Put each player on a squad. Saying the player's name in a call is then enough.</span>
     <div class="sqgrid">${S.roster.filter(r => r.name).map(r => { const q = (d.squadOf || {})[r.name] || ""; return `<div class="sqrow"><span>${esc(r.name)}</span><div class="seg">${S.squads.map(sq => `<button data-act="sq" data-p="${esc(r.name)}" data-q="${esc(sq)}" aria-pressed="${q === sq}"><span class="sw" style="background:${sqColor(sq)}"></span> ${esc(sq)}</button>`).join("")}<button data-act="sq" data-p="${esc(r.name)}" data-q="" aria-pressed="${!q}">Out</button></div></div>` }).join("")}</div></div>` : ""}
-  <div class="row"><button class="btn primary" data-act="save-form">${d._new ? "Create and start calling" : "Save"}</button></div>`;
+  <div class="row"><button class="btn primary" data-act="save-form">${d._new ? "Create and start calling" : "Save changes"}</button>${d._new ? "" : `<span class="small">Changing a video's label to a quarter or half moves its plays to that period.</span>`}</div>`;
 }
 function pullForm() {
   const d = formDraft; if (!d) return;
@@ -1245,10 +1478,27 @@ function saveForm() {
   d.name = d.name.trim() || (d.type === "Game" ? "Game" : "Scrimmage") + " " + (d.date || "");
   d.videos = d.videos.filter(v => v.url);
   const bad = d.videos.find(v => !ytId(v.url)); if (bad) { toast("“" + bad.url + "” doesn't look like a YouTube link."); return }
-  const isNew = d._new; delete d._new;
-  if (isNew) S.sessions.push(d); else { const i = S.sessions.findIndex(x => x.id === d.id); S.sessions[i] = Object.assign(S.sessions[i], d) }
+  const isNew = d._new, back = d._back; delete d._new; delete d._back;
+  let msg = "Saved.";
+  if (isNew) S.sessions.push(d);
+  else {
+    const i = S.sessions.findIndex(x => x.id === d.id); const live = S.sessions[i];
+    // keep plays booked while the form was open; relabelled videos move their plays to the new period
+    d.plays = live.plays;
+    const byVid = Object.fromEntries(d.videos.map(v => [v.id, v]));
+    let moved = 0, orphan = 0;
+    for (const p of d.plays) {
+      if (!p.vid || p.vid === "local") continue;
+      const v = byVid[p.vid];
+      if (!v) { orphan++; continue }
+      const per = LABEL_PERIOD[v.label]; if (per && p.period !== per) { p.period = per; moved++ }
+    }
+    if (moved) msg = `Saved. ${moved} play${moved === 1 ? "" : "s"} moved to the new period.`;
+    if (orphan) msg += ` ${orphan} play${orphan === 1 ? " was" : "s were"} called on a video you removed; ${orphan === 1 ? "it keeps its" : "they keep their"} stats but lose the replay link.`;
+    S.sessions[i] = Object.assign(live, d);
+  }
   S.cur = d.id; formDraft = null; save();
-  if (isNew) { view = "call"; renderAll(); showVideo(currentVideo()); toast("Session ready. Start calling.") } else { renderAll(); showVideo(currentVideo()) }
+  if (isNew || back) { view = "call"; renderAll(); showVideo(currentVideo()); toast(isNew ? "Session ready. Start calling." : msg) } else { renderAll(); showVideo(currentVideo()); toast(msg) }
 }
 
 /* ===================== SETUP ===================== */
@@ -1256,6 +1506,7 @@ function renderSetup() {
   $("rosterT").innerHTML = `<thead><tr><th>#</th><th class="l">Player</th><th class="l">Spoken names</th><th></th></tr></thead><tbody>` +
     S.roster.map((r, i) => `<tr><td style="width:60px"><input class="rNum" data-i="${i}" value="${esc(r.num)}" inputmode="numeric"></td><td><input class="rName" data-i="${i}" value="${esc(r.name)}"></td><td><input class="rAlias" data-i="${i}" value="${esc(r.alias)}" placeholder="optional"></td><td><button class="ib" data-act="del-player" data-i="${i}" title="Remove">✕</button></td></tr>`).join("") + `</tbody>`;
   $("weightsF").innerHTML = WLAB.map(([k, l]) => `<div class="field"><label class="label" for="w_${k}">${esc(l)}</label><input id="w_${k}" type="number" step="${k === "factor" ? "0.0001" : "1"}" value="${k === "factor" ? (+S.weights[k]).toFixed(4) : S.weights[k]}"></div>`).join("");
+  $("ghRepo").value = ghCfg().repo; $("ghTok").placeholder = ghCfg().token ? "Key saved (paste a new one to replace it)" : "github_pat_…";
   $("optLead").value = S.leadIn; $("optLang").value = S.lang; $("optSquads").value = S.squads.join(", ");
 }
 function pullRoster() {
@@ -1318,7 +1569,9 @@ async function unzip(code) {
 let shareTarget = null;
 async function openShare(id) {
   const x = S.sessions.find(q => q.id === id) || cur(); if (!x) return;
-  shareTarget = x;
+  shareTarget = x; lastShort = null;
+  $("shortOut").hidden = true; $("shortMsg").textContent = ""; $("shortSteps").innerHTML = "";
+  $("shortMode").textContent = ghCfg().token ? "Saves to your GitHub by itself." : "Downloads a small file to add with GitHub Desktop.";
   const pack = { v: 1, w: x.shared ? (x.weights || S.weights) : S.weights, s: packSession(x) };
   const code = await zip(JSON.stringify(pack));
   const link = location.href.split("#")[0] + "#share=" + code;
@@ -1328,6 +1581,72 @@ async function openShare(id) {
   $("shareSize").textContent = link.length > 60000 ? `This link is long (${kb} KB). Some email programs cut long links; if a coach can't open it, send the session file instead.` : `${kb || 1} KB link`;
   $("shareModal").hidden = false;
   if (location.protocol === "file:") $("shareSize").textContent = "This copy is opened from a file on your computer, so the link only works on this computer. Share from the GitHub address instead.";
+}
+/* ---------- short links: the session is stored as s/<code>.json in the GitHub repository ---------- */
+const GHKEY = "heat-film-caller-gh";
+function ghCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GHKEY) || "{}") } catch (e) {} return { repo: c.repo || guessRepo(), token: c.token || "" } }
+function guessRepo() { const m = location.hostname.match(/^([^.]+)\.github\.io$/); const p = location.pathname.split("/").filter(Boolean)[0]; return m && p ? m[1] + "/" + p : "jamnei/heatfilmcaller" }
+function siteBase() { return location.href.split("#")[0].split("?")[0].replace(/index\.html$/, "") }
+function newCode() { const a = "abcdefghjkmnpqrstuvwxyz23456789"; let c = ""; const r = crypto.getRandomValues(new Uint8Array(6)); for (const v of r) c += a[v % a.length]; return c }
+function utf8b64(str) { const b = new TextEncoder().encode(str); let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s) }
+async function ghPut(cfg, path, text, msg) {
+  const r = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${path}`, { method: "PUT",
+    headers: { "Authorization": "Bearer " + cfg.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+    body: JSON.stringify({ message: msg, content: utf8b64(text) }) });
+  if (!r.ok) { let d = ""; try { d = (await r.json()).message || "" } catch (e) {} throw new Error(r.status + (d ? " " + d : "")) }
+}
+let lastShort = null;
+async function makeShort() {
+  const x = shareTarget || cur(); if (!x) return;
+  const code = newCode();
+  const pack = { kind: "heat-film-session", v: 1, weights: x.shared ? (x.weights || S.weights) : S.weights, session: packSession(x) };
+  const text = JSON.stringify(pack);
+  const link = siteBase() + "#s=" + code;
+  const cfg = ghCfg();
+  $("shortBtn").disabled = true;
+  try {
+    if (cfg.token) {
+      $("shortMsg").textContent = "Saving to GitHub…";
+      await ghPut(cfg, "s/" + code + ".json", text, "Share " + (x.name || "session") + (x.date ? " " + x.date : ""));
+      $("shortSteps").innerHTML = "Saved to your repository. The link opens for coaches in about a minute, once GitHub has published it. Use <b>Check it works</b> before sending.";
+      $("shortMsg").textContent = "";
+    } else {
+      download(code + ".json", text, "application/json");
+      $("shortSteps").innerHTML = `Two steps before the link works:<br>1. In GitHub Desktop choose <b>Repository → Show in Finder</b>. Open the <b>s</b> folder (create a folder named <b>s</b> the first time) and move <b>${code}.json</b> from Downloads into it.<br>2. Back in GitHub Desktop, click <b>Commit to main</b>, then <b>Push origin</b>. The link works about a minute later.<br><span style="opacity:.8">To make this one click, add a GitHub access key under Setup → Short share links.</span>`;
+    }
+    lastShort = { code, link };
+    $("shortLink").value = link; $("shortOut").hidden = false;
+  } catch (e) {
+    $("shortMsg").textContent = "";
+    $("shortSteps").innerHTML = `<span class="warn">GitHub didn't accept the save (${esc(e.message)}).</span> Check the access key under Setup → Short share links, or remove it to use the file method.`;
+    $("shortOut").hidden = false; $("shortLink").value = "";
+  } finally { $("shortBtn").disabled = false }
+}
+async function fetchShort(code) {
+  const cfg = ghCfg(); const [own, repo] = cfg.repo.split("/");
+  const tries = [siteBase() + "s/" + code + ".json?t=" + Date.now(), `https://raw.githubusercontent.com/${own}/${repo}/main/s/${code}.json`];
+  for (const u of tries) { try { const r = await fetch(u, { cache: "no-store" }); if (r.ok) return await r.json() } catch (e) {} }
+  return null;
+}
+async function checkShort() {
+  if (!lastShort) return; $("shortMsg").textContent = "Checking…";
+  const r = await fetch(siteBase() + "s/" + lastShort.code + ".json?t=" + Date.now(), { cache: "no-store" }).catch(() => null);
+  $("shortMsg").textContent = r && r.ok ? "✓ Live. Coaches can open it now." : "Not published yet. Give it another minute and check again.";
+}
+async function ghSave() {
+  const repo = $("ghRepo").value.trim() || guessRepo(), token = $("ghTok").value.trim();
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { $("ghMsg").textContent = "Repository should look like jamnei/heatfilmcaller."; return }
+  const old = ghCfg(); const tok = token || old.token;
+  if (!tok) { $("ghMsg").textContent = "Paste the access key first."; return }
+  $("ghMsg").textContent = "Testing…";
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: { "Authorization": "Bearer " + tok, "Accept": "application/vnd.github+json" } });
+    if (!r.ok) throw new Error(r.status === 401 ? "the key wasn't accepted" : r.status === 404 ? "the key can't see that repository" : "GitHub answered " + r.status);
+    const d = await r.json();
+    if (!d.permissions || !d.permissions.push) throw new Error("the key can read but not change the repository; give it Contents: Read and write");
+    try { localStorage.setItem(GHKEY, JSON.stringify({ repo, token: tok })) } catch (e) {}
+    $("ghTok").value = ""; $("ghMsg").textContent = "✓ Connected. Create short link now saves by itself.";
+  } catch (e) { $("ghMsg").textContent = "Not saved: " + e.message + "." }
 }
 function saveSessionFile(x) {
   x = x || shareTarget || cur(); if (!x) return;
@@ -1342,7 +1661,18 @@ function addImported(o, w) {
   else toast("Session added to your sessions.");
 }
 async function loadSharedFromHash() {
-  const h = location.hash; if (!h.startsWith("#share=")) return;
+  const h = location.hash;
+  if (h.startsWith("#s=")) {
+    const code = h.slice(3).replace(/[^a-z0-9]/gi, "");
+    toast("Opening shared session…");
+    const d = await fetchShort(code);
+    if (!d || !d.session) { toast("This short link isn't available yet. If it was just made, try again in a minute."); return }
+    S.sessions = S.sessions.filter(x => !x.shared);
+    const x = unpackSession(d.session, { shared: true, weights: Object.assign({}, W0, d.weights || {}) });
+    S.prevCur = S.cur; S.sessions.push(x); S.cur = x.id; view = "call"; sqFilter = "All";
+    renderAll(); showVideo(currentVideo()); return;
+  }
+  if (!h.startsWith("#share=")) return;
   try {
     const pack = JSON.parse(await unzip(h.slice(7)));
     if (!pack || !pack.s) throw 0;
@@ -1387,6 +1717,8 @@ function arm(id) { armed = id; clearTimeout(armT); armT = setTimeout(() => { arm
 document.addEventListener("click", e => {
   const nb = e.target.closest("nav.tabs button"); if (nb) { if (view === "sessions" && formDraft) pullForm(); view = nb.dataset.view; renderAll(); return }
   const sqb = e.target.closest("[data-sq]"); if (sqb) { sqFilter = sqb.dataset.sq; renderTally(); return }
+  const cl = e.target.closest("td[data-clip]"); if (cl && cl.classList.contains("clip")) { openClips(cl); return }
+  if (e.target.classList && e.target.classList.contains("modal")) { e.target.hidden = true; return }
   const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT") return;
   const a = el.dataset.act; const s = cur();
   switch (a) {
@@ -1406,6 +1738,13 @@ document.addEventListener("click", e => {
     case "copy-table": copy(tableTSV(el.dataset.t)); break;
     case "share": openShare(el.dataset.id || (s && s.id)); break;
     case "copy-link": copy($("shareLink").value); break;
+    case "make-short": makeShort(); break;
+    case "close-clips": $("clipModal").hidden = true; break;
+    case "copy-summary": { const b2 = $("sumBox"); if (b2) copy([...b2.querySelectorAll("p")].map(p2 => p2.textContent).join("\n\n")); break }
+    case "copy-short": if ($("shortLink").value) copy($("shortLink").value); break;
+    case "check-short": checkShort(); break;
+    case "gh-save": ghSave(); break;
+    case "gh-forget": try { localStorage.removeItem(GHKEY) } catch (e) {} $("ghMsg").textContent = "Key removed from this browser."; break;
     case "save-file": saveSessionFile(); break;
     case "close-share": $("shareModal").hidden = true; break;
     case "open-file": $("sessFileIn").click(); break;
@@ -1415,9 +1754,11 @@ document.addEventListener("click", e => {
     case "new-session": newSession(); break;
     case "sample": sample(); break;
     case "open-session": S.cur = el.dataset.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo()); break;
+    case "edit-current": { if (!s || s.shared) break; formDraft = clone(s); formDraft.videos = formDraft.videos || []; formDraft._back = true; view = "sessions"; renderAll(); setTimeout(() => { const f = $("sessForm"); if (f) f.scrollIntoView({ block: "start" }) }, 30); break }
+    case "set-squad": { if (!s || s.shared) break; s.squadOf = s.squadOf || {}; s.squadOf[el.dataset.p] = el.dataset.q; save(); renderPBP(); renderTally(); toast(el.dataset.p + " is on " + el.dataset.q + "."); break }
     case "edit-session": { const x = S.sessions.find(q => q.id === el.dataset.id); if (x) { formDraft = clone(x); formDraft.videos = formDraft.videos || []; view = "sessions"; renderAll() } break }
     case "del-session": { const id = el.dataset.id; if (armed === "s:" + id) { armed = null; S.sessions = S.sessions.filter(q => q.id !== id); if (S.cur === id) S.cur = S.sessions[0] ? S.sessions[0].id : null; save(); renderAll(); toast("Session deleted.") } else { arm("s:" + id); renderSessions() } break }
-    case "cancel-form": formDraft = null; renderSessions(); break;
+    case "cancel-form": { const back = formDraft && formDraft._back; formDraft = null; if (back) { view = "call"; renderAll() } else renderSessions(); break }
     case "add-vid": pullForm(); formDraft.videos.push({ id: uid("v"), label: formDraft.videos.length ? "Q" + Math.min(4, formDraft.videos.length + 1) : "Full game", url: "" }); renderForm(); break;
     case "del-vid": pullForm(); formDraft.videos.splice(+el.dataset.vi, 1); renderForm(); break;
     case "sq": pullForm(); formDraft.squadOf = formDraft.squadOf || {}; if (el.dataset.q) formDraft.squadOf[el.dataset.p] = el.dataset.q; else delete formDraft.squadOf[el.dataset.p]; renderForm(); break;
@@ -1443,6 +1784,7 @@ $("restoreIn").addEventListener("change", e => {
   r.readAsText(f);
 });
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { const m = document.querySelector(".modal:not([hidden])"); if (m) { m.hidden = true; return } }
   if (e.target.id === "editIn") { if (e.key === "Enter") { e.preventDefault(); saveEdit(editing) } if (e.key === "Escape") { editing = null; renderPBP() } return }
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || view !== "call" || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === " ") { e.preventDefault(); isPlaying() ? pause() : play() }
