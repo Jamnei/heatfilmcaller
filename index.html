@@ -353,11 +353,11 @@ th.grp{background:var(--raise);color:var(--ink)}
       <table><tbody>
         <tr><td>Make</td><td>make, made, good, bucket, score, hits, drains, cash, splash, nails, finish, and-one</td></tr>
         <tr><td>Miss</td><td>miss, no good, brick, rims out, short, long, airball, blocked</td></tr>
-        <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
+        <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup, lay, lay in, reverse, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
         <tr><td><span class="tier t-Silver"></span> Silver</td><td>catch and shoot, spot up</td></tr>
         <tr><td><span class="tier t-Bronze"></span> Bronze</td><td>mid-range, jumper, pull-up, floater, runner, pull-up three, step-back three</td></tr>
         <tr><td><span class="tier t-Red"></span> Red</td><td>say “red shot”, “bad shot” or “shot we didn’t want” to downgrade any shot. To change a grade afterwards, click the shot in the play-by-play: each click moves it Gold → Silver → Bronze → Red → no grade</td></tr>
-        <tr><td>Threes</td><td>three, trey, from deep, 3 pointer. A plain “three make” is booked ungraded; add the type or a tier</td></tr>
+        <tr><td>Threes</td><td>three, trey, from deep, 3 pointer. Add how it came: <b>catch and shoot</b>, on time on target, off the catch, off the pass, receive, rhythm (Silver) · <b>off the dribble</b>, pull up, step back (Bronze). A plain “three make” is booked ungraded</td></tr>
         <tr><td>Free throws</td><td>free throw make, free throw miss, 1 of 2, both, split</td></tr>
       </tbody></table>
     </div>
@@ -563,16 +563,16 @@ th.grp{background:var(--raise);color:var(--ink)}
     "bronze white black blue live dead rushed panic hurried free throw throws line read paint touch corner wing quarter half overtime").split(" "));
 
   const SHOT_TYPES = [
-    { re: "catch and shoot|catch n shoot|catch shoot|c and s|spot up|spotup", type: "Catch & shoot 3", tier: "Silver", val: 3 },
+    { re: "catch and shoot|catch n shoot|catch shoot|c and s|spot up|spotup|on time and on target|on time on target|on time|on target|off the catch|off a catch|on the catch|off the pass|off a pass|on the receive|received|receives|receive|in rhythm|rhythm", type: "Catch & shoot 3", tier: "Silver", val: 3 },
     { re: "pull up 3|pullup 3|step back 3|stepback 3|side step 3|sidestep 3|off the dribble 3|off dribble 3|off the bounce 3", type: "Off-dribble 3", tier: "Bronze", val: 3 },
     { re: "putback|put back|tip in|tip back in|second chance|follow up|follow", type: "Putback", tier: "Gold", val: 2 },
-    { re: "layup|lay up|lay in|layin|finger roll|reverse|scoop|euro step|eurostep", type: "Layup", tier: "Gold", val: 2 },
+    { re: "layup|lay up|lay in|layin|lay|finger roll|reverse|scoop|euro step|eurostep", type: "Layup", tier: "Gold", val: 2 },
     { re: "dunk|dunks|slam|jam|flush", type: "Layup", tier: "Gold", val: 2 },
     { re: "transition|fast break|breakaway|break away|coast to coast|leak out|run out|on the break", type: "Transition", tier: "Gold", val: 2 },
     { re: "drive|drives|driving|downhill|attacks the rim|attack the rim|to the rim|at the rim", type: "Drive", tier: "Gold", val: 2 },
     { re: "post up|postup|post move|post|hook shot|hook|drop step|up and under|back down|turnaround", type: "Post-up", tier: "Gold", val: 2 },
     { re: "floater|floaters|runner|teardrop|float", type: "Floater", tier: "Bronze", val: 2 },
-    { re: "mid range|midrange|mid|jump shot|jumper|pull up|pullup|elbow|baseline j|baseline|fadeaway|fade away|fade", type: "Mid-range", tier: "Bronze", val: 2 },
+    { re: "mid range|midrange|mid|jump shot|jumper|pull up|pullup|step back|stepback|off the dribble|off dribble|off a dribble|off the bounce|elbow|baseline j|baseline|fadeaway|fade away|fade", type: "Mid-range", tier: "Bronze", val: 2 },
   ];
   const TIERS = [["gold", "Gold"], ["silver", "Silver"], ["bronze", "Bronze"], ["red|bad shot|forced shot|heat check|red shot|poor shot|bad quality|poor quality|low quality|shot we don't want|shot we dont want|shot we did not want|dont want|don't want|did not want|not a shot we want", "Red"]];
 
@@ -668,6 +668,7 @@ th.grp{background:var(--raise);color:var(--ink)}
     for (const [re, type, det, b] of toRules) {
       if (take(st, re)) { isTO = true; if (!toType || type === "Rushed") toType = toType && type === "Rushed" ? "Rushed" : (toType || type); toDetail.push(det); if (b && !ball) ball = b }
     }
+    const offPass = take(st, "off the pass|off a pass");   // a catch-and-shoot word, not a passing turnover
     const explicitTO = [["passing|bad read|pass", "Passing"], ["ball handling|handling|handle", "Handling"], ["violation", "Violation"]];
     for (const [re, type] of explicitTO) if (take(st, re)) { isTO = isTO || /turnover|turn over|tov|giveaway|cough/.test(text); toType = type; }
     if (take(st, "turnovers|turnover|turn over|turned it over|turns it over|cough up|coughs it up|coughed it up|giveaway|give away|gave it away|lost it|loses it|lost the ball|loses the ball|tov|t o")) isTO = true;
@@ -685,11 +686,12 @@ th.grp{background:var(--raise);color:var(--ink)}
     // ---- shots ----
     let sType = null, tier = null, val = null;
     for (const t of SHOT_TYPES) { if (take(st, t.re)) { if (!sType) { sType = t.type; tier = t.tier; val = t.val } } }
+    if (offPass && !sType) { sType = "Catch & shoot 3"; tier = "Silver"; val = 3 }
     for (const [re, tName] of TIERS) if (take(st, re)) tier = tName;
     if (take(st, "3 pointer|3 point|3 ball|3s|3|trey|triple|from deep|from downtown|from 3|deep ball|bomb")) {
       val = 3;
       if (sType && sType !== "Catch & shoot 3" && sType !== "Off-dribble 3") {
-        if (sType === "Mid-range" && /pull ?up|step ?back/.test(text)) { sType = "Off-dribble 3"; tier = tier === "Red" ? "Red" : "Bronze" }
+        if (sType === "Mid-range" && /pull ?up|step ?back|off (?:the |a )?dribble|off the bounce/.test(text)) { sType = "Off-dribble 3"; tier = tier === "Red" ? "Red" : "Bronze" }
         else { sType = null; if (tier === "Bronze" || tier === "Gold") tier = null }
       }
     }
