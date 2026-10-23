@@ -64,7 +64,9 @@ textarea{width:100%;min-height:90px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:4px 12px;min-height:32px;font-weight:600;font-size:13.5px}
 .chip[aria-pressed="true"]{background:var(--heat-soft);border-color:var(--heat);color:var(--ink)}
-.callbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start}
+.callbar{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:start}
+.play2{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--raise);display:grid;place-items:center;font-size:17px;font-weight:700;color:var(--ink)}
+.play2.on{border-color:var(--ok);color:var(--ok)}
 .callbar .book{grid-column:1 / -1;min-height:40px}
 .preview:empty,#lastResult:empty{display:none}
 .tagbtn{border:0;background:none;padding:0;cursor:pointer;border-radius:6px}
@@ -224,6 +226,7 @@ th.grp{background:var(--raise);color:var(--ink)}
 
       <div class="card pbpcard">
         <div class="callbar">
+          <button class="play2" id="playBtn2" data-act="toggle" title="Play / pause (space)" aria-label="Play or pause the video">▶</button>
           <button class="mic" id="micBtn" data-act="mic" title="Start or stop listening (M)" aria-label="Start listening">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
           </button>
@@ -1001,7 +1004,7 @@ function isPlaying() { try { if (V.mode === "yt") return V.yt.getPlayerState() =
 function play() { try { if (V.mode === "yt") V.yt.playVideo(); else if (V.mode === "local") $("localVid").play() } catch (e) {} setTimeout(updatePlayBtn, 150) }
 function pause() { try { if (V.mode === "yt") V.yt.pauseVideo(); else if (V.mode === "local") $("localVid").pause() } catch (e) {} setTimeout(updatePlayBtn, 150) }
 function seekTo(t) { t = Math.max(0, t); try { if (V.mode === "yt") V.yt.seekTo(t, true); else if (V.mode === "local") $("localVid").currentTime = t; else { V.manual = t; const m = $("manualT"); if (m) m.value = fmtT(t) } } catch (e) {} tick() }
-function updatePlayBtn() { $("playBtn").textContent = isPlaying() ? "❚❚" : "▶" }
+function updatePlayBtn() { const on = isPlaying(); $("playBtn").textContent = on ? "❚❚" : "▶"; const b = $("playBtn2"); if (b) { b.textContent = on ? "❚❚" : "▶"; b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Pause the video" : "Play the video") } }
 function tick() { const c = $("clock"); if (c) c.textContent = fmtT(now()) }
 setInterval(() => { if (view === "call") { tick(); updatePlayBtn() } }, 250);
 window.addEventListener("blur", () => setTimeout(() => {
