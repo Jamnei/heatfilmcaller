@@ -168,6 +168,8 @@ th.grp{background:var(--raise);color:var(--ink)}
 .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;width:min(640px,100%);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow:auto}
 .modal h3{margin:0;font:700 22px var(--display);letter-spacing:.04em;text-transform:uppercase}
 .modal textarea{font:12px ui-monospace,Menlo,Consolas,monospace;min-height:110px;word-break:break-all}
+.qual{font:700 13px var(--display);letter-spacing:.06em;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--ok)}
+.qual.lowq{color:var(--warn);border-color:#5a4620}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
 .empty{border:1px dashed var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .empty h2{margin:0;font:700 24px var(--display);letter-spacing:.04em;text-transform:uppercase}
@@ -213,6 +215,7 @@ th.grp{background:var(--raise);color:var(--ink)}
           <button class="tbtn" data-act="toggle" id="playBtn" title="Play / pause (space)" style="min-width:60px">▶</button>
           <button class="tbtn" data-act="seek" data-d="step" id="fwdBtn" title="Forward (→)">+3</button>
           <div class="clock" id="clock">0:00</div>
+          <span class="qual" id="qual" hidden></span><button class="tbtn" data-act="fullscreen" id="fsBtn" title="Full screen: a bigger player gets a sharper picture from YouTube" style="min-width:auto;padding:0 12px">⛶ Full screen</button>
           <select id="rate" title="Playback speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
           <span class="label" style="margin-left:auto">Period</span>
           <div class="chips" id="perChips"></div>
@@ -941,12 +944,14 @@ function showVideo(v) {
   if (!V.ytReady) { if (V.ytFailed) { V.mode = "manual"; renderVideoArea(); return } V.pending = v; V.mode = "loading"; renderVideoArea(); return }
   V.mode = "yt"; $("ytHost").hidden = false;
   if (V.yt && V.ytVid === v.id) return;
-  if (V.yt) { V.yt.cueVideoById({ videoId: id, startSeconds: ytStart(v.url) }); V.ytVid = v.id; return }
+  // each video gets a fresh, full-size player: a reused player tends to restart at a low resolution
+  if (V.yt) { try { V.yt.destroy() } catch (e) {} V.yt = null; V.ytOk = false; document.querySelectorAll("#ytHost").forEach(x => x.remove()); const h = document.createElement("div"); h.id = "ytHost"; $("vidbox").prepend(h) }
+  V.hdTries = 0;
   V.yt = new YT.Player("ytHost", {
-    videoId: id, playerVars: { rel: 0, modestbranding: 1, playsinline: 1, disablekb: 1, start: ytStart(v.url) },
+    videoId: id, playerVars: { rel: 0, modestbranding: 1, playsinline: 1, disablekb: 1, vq: "hd1080", start: ytStart(v.url) },
     events: {
-      onReady: () => { V.ytOk = true; V.yt.setPlaybackRate(+$("rate").value || 1) },
-      onStateChange: () => updatePlayBtn(),
+      onReady: () => { V.ytOk = true; V.yt.setPlaybackRate(+$("rate").value || 1); askHD() },
+      onStateChange: (e) => { updatePlayBtn(); if (e.data === 1 || e.data === 3) askHD() },
       onError: (e) => {
         const m = $("ytMsg"); m.hidden = false;
         m.textContent = (e.data === 150 || e.data === 101 || e.data === 153 || e.data === 152)
@@ -957,6 +962,19 @@ function showVideo(v) {
   });
   V.ytVid = v.id;
 }
+// YouTube decides the resolution itself; ask for the best on offer whenever it starts or buffers
+function askHD() {
+  if (!V.yt || (V.hdTries || 0) > 6) return; V.hdTries = (V.hdTries || 0) + 1;
+  try { const lv = V.yt.getAvailableQualityLevels ? V.yt.getAvailableQualityLevels() : []; V.yt.setPlaybackQuality(lv && lv.length ? lv[0] : "hd1080") } catch (e) {}
+}
+const QNAME = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p", hd1440: "1440p", hd2160: "4K", highres: "4K+" };
+function showQuality() {
+  const el = $("qual"); if (!el) return;
+  let q = ""; try { if (V.mode === "yt" && V.yt && V.yt.getPlaybackQuality) q = QNAME[V.yt.getPlaybackQuality()] || "" } catch (e) {}
+  el.textContent = q; el.hidden = !q; el.classList.toggle("lowq", /^(144|240|360|480)p$/.test(q));
+  el.title = q ? "YouTube is playing this at " + q + ". If it's low, click the gear in the video and choose 1080p, or press Full screen." : "";
+}
+setInterval(showQuality, 1500);
 function useLocal() {
   if (!V.localUrl) { V.mode = "manual"; renderVideoArea(); return }
   V.mode = "local"; $("ytHost").hidden = true; if (V.yt) try { V.yt.pauseVideo() } catch (e) {}
@@ -1112,6 +1130,7 @@ function handleCall(text, t0, source) {
     if (p.time && p.time.abs != null) t = p.time.abs; else if (p.time && p.time.rel != null) t = Math.max(0, t0 + p.time.rel);
     return { id: uid("p"), vid: v ? v.id : null, period: curPeriod(), t: Math.round(t), squad: p.squad, text: p.text, items: p.items, notes: p.notes, warns: p.warns, ts: Date.now(), src: source };
   });
+  if (s.type === "Scrimmage") for (const p of made) if (p.squad) { const first = p.items.find(i => i.p); if (first && !(s.squadOf || {})[first.p]) { s.squadOf = s.squadOf || {}; s.squadOf[first.p] = p.squad } }
   s.plays.push(...made); save();
   lastBatch = made.map(p => p.id);
   const explicit = plays.map((p, i) => p.time ? made[i].t : null).filter(t => t != null);
@@ -1169,7 +1188,7 @@ function renderPBP() {
     if (editing === p.id) return `<div class="play"><div class="tm"><span class="tlink" style="text-decoration:none">${fmtT(p.t)}</span></div><div class="bd"><input id="editIn" value="${esc(p.text)}" style="width:100%"><span class="small">Enter saves · Esc cancels · a new time in the text replaces ${fmtT(p.t)}</span></div><div class="acts"><button class="ib" data-act="edit-save" data-id="${p.id}">Save</button></div></div>`;
     return `<div class="play ${p.warns.length ? "warned" : ""}">
       <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}<span class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
-      <div class="bd"><div class="row" style="gap:5px">${p.squad || sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(p.squad || sqOfPlay(p))}" title="${esc(p.squad || sqOfPlay(p))}"></span>` : ""}${p.items.map((i, ix) => /^[23][MX]$/.test(i.k) && !viewOnly() ? `<button class="tagbtn" data-act="tier" data-id="${p.id}" data-i="${ix}" title="Click to change the shot grade">${itemTag(i)}</button>` : itemTag(i)).join("")}</div>
+      <div class="bd"><div class="row" style="gap:5px">${sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(sqOfPlay(p))}" title="${esc(sqOfPlay(p))}"></span>` : ""}${p.items.map((i, ix) => /^[23][MX]$/.test(i.k) && !viewOnly() ? `<button class="tagbtn" data-act="tier" data-id="${p.id}" data-i="${ix}" title="Click to change the shot grade">${itemTag(i)}</button>` : itemTag(i)).join("")}</div>
         ${p.warns.length ? `<div class="warn">${esc(p.warns.join(" · "))}</div>` : ""}
         ${(() => { const s0 = cur(); if (!s0 || s0.type !== "Scrimmage" || viewOnly() || p.squad) return ""; const need = [...new Set(p.items.map(i => i.p).filter(n => n && !(s0.squadOf || {})[n]))]; return need.map(n => `<div class="row" style="gap:4px"><span class="warn" style="font-size:12px">${esc(short(n))} has no squad:</span>${S.squads.map(q => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="set-squad" data-p="${esc(n)}" data-q="${esc(q)}"><span class="sw" style="background:${sqColor(q)}"></span> ${esc(q)}</button>`).join("")}</div>`).join("") })()}
         ${viewOnly() ? "" : p.items.map((i, ix) => i.k !== "TO" || (i.toType && i.ball) ? "" : `<div class="row" style="gap:4px">${!i.toType ? `<span class="warn" style="font-size:12px">Turnover type:</span>${["Passing", "Handling", "Violation", "Rushed"].map(t => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="to-set" data-id="${p.id}" data-i="${ix}" data-f="toType" data-v="${t}">${t}</button>`).join("")}` : ""}${!i.ball ? `<span class="warn" style="font-size:12px">${i.toType ? "Ball:" : "·"}</span>${["Live", "Dead"].map(t => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="to-set" data-id="${p.id}" data-i="${ix}" data-f="ball" data-v="${t}">${t}</button>`).join("")}` : ""}</div>`).join("")}
@@ -1180,7 +1199,7 @@ function renderPBP() {
   }).join("") : `<div style="padding:16px 14px" class="note">No plays yet. Press the mic or type a call.</div>`;
   if (editing) { const e = $("editIn"); if (e) { e.focus(); e.setSelectionRange(e.value.length, e.value.length) } }
 }
-function sqOfPlay(p) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; const pl = p.items.find(i => i.p); return pl ? (s.squadOf || {})[pl.p] || null : null }
+function sqOfPlay(p) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; const pl = p.items.find(i => i.p); return pl ? (s.squadOf || {})[pl.p] || p.squad || null : p.squad || null }
 function sqColor(n) { const k = String(n || "").toLowerCase(); return k === "white" ? "var(--j-white)" : k === "black" ? "var(--j-black)" : k === "blue" ? "var(--j-blue)" : "var(--j-other)" }
 function jump(p) {
   const s = cur(); if (!s) return;
@@ -1230,7 +1249,7 @@ function finish(L) {
   L.ng = L.fga - L.ga - L.sa - L.ba - L.ra;
   return L;
 }
-function itemSquad(p, it) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; return p.squad || (s.squadOf || {})[it.p] || null }
+function itemSquad(p, it) { const s = cur(); if (!s || s.type !== "Scrimmage") return null; return (it.p && (s.squadOf || {})[it.p]) || p.squad || null }
 function tallies() {
   const s = cur(); const by = {}, sq = {}, tot = blank();
   for (const p of s.plays) for (const it of p.items) {
@@ -1306,6 +1325,14 @@ function writeSummary(T) {
   const subj = sqFilter !== "All" ? `${sqFilter}` : (s.type === "Scrimmage" ? "Across all squads, players" : "The Heat");
   head += `${subj} shot ${t.fgm} of ${t.fga} from the field${t.tpa ? ` (${t.tpm} of ${t.tpa} from three)` : ""}${t.fta ? `, ${t.ftm} of ${t.fta} at the line` : ""}, with ${t.ast} assist${t.ast === 1 ? "" : "s"}, ${t.to} turnover${t.to === 1 ? "" : "s"} and ${t.raw} raw HVP points.`;
   P.push(head);
+  if (s.type === "Scrimmage" && sqFilter === "All" && T.sq.length >= 2) {
+    const poss = L => L.fga - L.or + L.to + 0.44 * L.fta;
+    const eff = T.sq.filter(q => poss(q.L) >= 3).map(q => ({ n: q.name, ppp: q.L.pts / poss(q.L), raw: q.L.raw })).sort((a, b) => b.ppp - a.ppp);
+    if (eff.length >= 2) {
+      const hv = T.sq.slice().sort((a, b) => b.L.raw - a.L.raw)[0];
+      P[P.length - 1] += ` ${eff[0].n} was the most efficient squad at ${eff[0].ppp.toFixed(2)} points per possession` + (eff.length > 1 ? ` (${eff.slice(1).map(e => `${e.n} ${e.ppp.toFixed(2)}`).join(", ")})` : "") + (hv.L.raw ? `, and ${hv.name === eff[0].n ? "also" : hv.name} led the squads in effort with ${hv.L.raw} raw HVP` : "") + ".";
+    }
+  }
   // standouts by combined score
   const byC = rows.slice().sort((a, b) => b.L.cmb - a.L.cmb);
   const top = byC[0];
@@ -1391,6 +1418,20 @@ function toBreakdown(T) {
   return `<div class="subgrid">${h}</div><div class="small">Turnover rate (TOV%) ${sqFilter !== "All" ? "for " + esc(sqFilter) : cur().type === "Scrimmage" ? "for all squads combined" : "for the Heat"}: <b>${rate}</b> of possessions, using possessions ≈ FGA − OREB + TOV + 0.44 × FTA (Dean Oliver). Live-ball share: ${pct(t.live, t.to)}%.</div>`;
 }
 
+function squadCompare(T) {
+  const s = cur(); if (!s || s.type !== "Scrimmage" || sqFilter !== "All" || T.sq.length < 2) return "";
+  const per = {}; for (const r of T.rows) if (r.sq) per[r.sq] = (per[r.sq] || 0) + 1;
+  const rows = S.squads.map(q => T.sq.find(x => x.name === q)).filter(Boolean).concat(T.sq.filter(x => !S.squads.includes(x.name)));
+  const poss = L => L.fga - L.or + L.to + 0.44 * L.fta;
+  const efg = L => L.fga ? ((L.fgm + 0.5 * L.tpm) / L.fga * 100).toFixed(1) : "–";
+  const cols = [["Players", (q, L) => per[q.name] || 0], ["PTS", (q, L) => L.pts, "hl"], ["FG", (q, L) => L.fgm + "-" + L.fga], ["3P", (q, L) => L.tpm + "-" + L.tpa], ["FT", (q, L) => L.ftm + "-" + L.fta], ["eFG%", (q, L) => efg(L)],
+    ["Poss", (q, L) => n1(poss(L))], ["Pts / poss", (q, L) => poss(L) > 0 ? (L.pts / poss(L)).toFixed(2) : "–", "hl"], ["TOV", (q, L) => L.to], ["TOV%", (q, L) => poss(L) > 0 ? (L.to / poss(L) * 100).toFixed(1) : "–"],
+    ["OREB", (q, L) => L.or], ["STL", (q, L) => L.stl], ["Raw HVP", (q, L) => L.raw], ["Combined", (q, L) => n1(L.cmb), "hl"]];
+  const h = `<thead><tr><th class="l">Squad</th>${cols.map(c => `<th>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>` +
+    rows.map(q => `<tr><td class="l"><span class="sw" style="background:${sqColor(q.name)}"></span> ${esc(q.name)}</td>${cols.map(c => cell(c[1](q, q.L), c[2])).join("")}</tr>`).join("") + `</tbody>`;
+  return `<section class="tsec"><div class="row between"><h3>Squad comparison</h3></div><div class="tbl"><table id="tbl-squads">${h}</table></div>
+    <div class="small">Every stat counts for the player's own squad whenever he is on the floor, so this works for 4-on-4-on-4 continuous play where all three squads share the clock. Possessions are estimated from each squad's own offence (FGA − OREB + TOV + 0.44 × FTA), so points per possession compares squads fairly even when they played different amounts.</div></section>`;
+}
 function renderTally() {
   const s = cur(); if (!s) return;
   const scr = s.type === "Scrimmage";
@@ -1400,6 +1441,7 @@ function renderTally() {
   const T = tallies();
   const summary = writeSummary(T);
   let out = summary ? `<section class="summary" id="sumBox"><div class="row between"><h3 style="margin:0;font:700 18px var(--display);letter-spacing:.06em;text-transform:uppercase">Session summary${sqFilter !== "All" ? " · " + esc(sqFilter) : ""}</h3><button class="btn ghost" data-act="copy-summary" style="min-height:32px">Copy</button></div>${summary}<span class="small">Click any underlined number in the tables below to list and replay the plays behind it.</span></section>` : "";
+  out += squadCompare(T);
   out += SECTIONS.map(([key, title]) => {
     const cols = COLS[key], fs = CLIPF[key];
     const rowCells = (L, whoAttr) => cols.map((c, ci) => cell(c[1](L), c[2], fs[ci] ? `data-clip="${key}:${ci}" ${whoAttr}` : "")).join("");
@@ -1841,6 +1883,7 @@ document.addEventListener("click", e => {
     case "copy-link": copy($("shareLink").value); break;
     case "make-short": makeShort(); break;
     case "close-clips": $("clipModal").hidden = true; break;
+    case "fullscreen": { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen() } catch (e) { toast("Full screen isn't available in this browser.") } break }
     case "merge-add": mergeImport($("mergeTarget").value); break;
     case "merge-separate": { const pi = pendingImport; $("mergeModal").hidden = true; if (pi) addImportedSeparate(pi.o, pi.w); break }
     case "copy-summary": { const b2 = $("sumBox"); if (b2) copy([...b2.querySelectorAll("p")].map(p2 => p2.textContent).join("\n\n")); break }
@@ -1894,6 +1937,7 @@ $("restoreIn").addEventListener("change", e => {
 });
 function keyOf(e) { return e.key.length === 1 ? e.key.toUpperCase() : e.key }
 function keyName(k) { return ({ ArrowLeft: "← Left arrow", ArrowRight: "→ Right arrow", ArrowUp: "↑ Up arrow", ArrowDown: "↓ Down arrow", " ": "Space", ",": ", (comma)", ".": ". (period)" })[k] || k }
+document.addEventListener("fullscreenchange", () => { const b = $("fsBtn"); if (b) b.textContent = document.fullscreenElement ? "⛶ Exit full screen" : "⛶ Full screen"; V.hdTries = 0; setTimeout(askHD, 800) });
 document.addEventListener("keydown", e => {
   if (e.target && e.target.classList && e.target.classList.contains("keycap")) {
     if (e.key === "Tab") return; e.preventDefault();
