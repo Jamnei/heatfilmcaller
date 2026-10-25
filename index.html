@@ -63,6 +63,8 @@ textarea{width:100%;min-height:90px}
 .clock input{font:700 24px var(--display);width:110px;text-align:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:4px 12px;min-height:32px;font-weight:600;font-size:13.5px}
+.perbtn{background:none;border:0;padding:0;color:var(--muted,#5d6670);text-decoration:underline dotted;cursor:pointer;font:inherit}
+.pset{display:inline-flex;margin-right:6px}.pset button{min-height:32px;font-size:12.5px;padding:2px 10px}
 .chip[aria-pressed="true"]{background:var(--heat-soft);border-color:var(--heat);color:var(--ink)}
 .callbar{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:start}
 .play2{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--raise);display:grid;place-items:center;font-size:17px;font-weight:700;color:var(--ink)}
@@ -349,7 +351,7 @@ th.grp{background:var(--raise);color:var(--ink)}
         <tr><td><code>undo</code> · <code>scratch that</code></td><td>Remove the last booked call</td></tr>
         <tr><td><code>play</code> · <code>pause</code></td><td>Control the video</td></tr>
         <tr><td><code>rewind 10</code> · <code>skip 10</code></td><td>Jump back or forward</td></tr>
-        <tr><td><code>second quarter</code> · <code>overtime</code> · <code>second half</code></td><td>Change the period on a full-game video</td></tr>
+        <tr><td><code>second quarter</code> · <code>overtime</code> · <code>second half</code></td><td>Change the period on a full-game video (or say <code>clip three</code> when using clips)</td></tr>
       </tbody></table>
       <h3>Keyboard</h3>
       <p><span class="kbd">Space</span> play or pause · <span class="kbd">←</span> <span class="kbd">→</span> back or forward 3 seconds (change the keys and seconds in Setup) · <span class="kbd">Shift</span>+<span class="kbd">←</span> <span class="kbd">→</span> 10 seconds · <span class="kbd">/</span> type a call · <span class="kbd">M</span> microphone · <span class="kbd">U</span> undo</p>
@@ -415,6 +417,12 @@ th.grp{background:var(--raise);color:var(--ink)}
   <p class="note" style="margin:0" id="mergeText"></p>
   <select id="mergeTarget"></select>
   <div class="row" style="justify-content:flex-end"><button class="btn" data-act="merge-separate">Keep separate</button><button class="btn primary" data-act="merge-add">Add to this session</button></div>
+</div></div>
+<div class="modal" id="perModal" hidden><div class="box" role="dialog" aria-labelledby="perTitle">
+  <h3 id="perTitle">Change period</h3>
+  <p class="note" style="margin:0" id="perText"></p>
+  <select id="perSel"></select>
+  <div class="row" style="justify-content:flex-end;flex-wrap:wrap" id="perBtns"></div>
 </div></div>
 <div class="toast" id="toast" hidden></div>
 
@@ -774,6 +782,8 @@ th.grp{background:var(--raise);color:var(--ink)}
     if (m) { const v = m[1] || m[2] || m[3]; return { cmd: "period", p: "Q" + (ORD[v] || v) } }
     m = s.match(/^(first|1st|second|2nd|1|2) half$/); if (m) return { cmd: "period", p: "H" + (ORD[m[1]] || m[1]) };
     if (/^(overtime|ot|over time)$/.test(s)) return { cmd: "period", p: "OT" };
+    m = s.match(/^(?:clip|clips|klip|clip number|segment) (1|2|3|4|5|6|one|two|to|too|three|four|for|five|six|first|second|third|fourth|fifth|sixth)$/);
+    if (m) { const w = { one: 1, two: 2, to: 2, too: 2, three: 3, four: 4, for: 4, five: 5, six: 6, first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6 }; return { cmd: "period", p: "C" + (w[m[1]] || m[1]) } }
     return null;
   }
 
@@ -1098,6 +1108,43 @@ if (!SR) { $("micBtn").title = "Voice needs Chrome or Edge on a computer"; $("mi
 /* ===================== CALLS ===================== */
 let typedStart = null, lastBatch = null, pendingWho = null;
 function ctx() { const s = cur(); return { index, roster: S.roster, squads: s && s.type === "Scrimmage" ? S.squads : [] } }
+let perEditId = null;
+function openPerEdit(id) {
+  const s = cur(); if (!s || viewOnly()) return; const p = s.plays.find(x => x.id === id); if (!p) return; perEditId = id;
+  const v = (s.videos || []).find(x => x.id === p.vid); const lock = v && LABEL_PERIOD[v.label];
+  const later = s.plays.filter(x => x.vid === p.vid && x.t > p.t).length;
+  $("perSel").innerHTML = PERIODS.concat(["H1","H2"], CLIPS).map(k => `<option value="${k}" ${p.period === k ? "selected" : ""}>${PLAB[k]}</option>`).join("");
+  if (lock) {
+    $("perText").innerHTML = `Play at ${fmtT(p.t)}, booked on the <b>${esc(v.label)}</b> video. Pick the video it really belongs to. Its time stays ${fmtT(p.t)}, counted from the start of that video. "All later plays" also moves every play after ${fmtT(p.t)} on ${esc(v.label)} (${later}).`;
+    $("perSel").innerHTML = s.videos.map(x => `<option value="vid:${x.id}" ${x.id === p.vid ? "selected" : ""}>${esc(x.label)} video</option>`).join("");
+    $("perSel").hidden = false;
+    $("perBtns").innerHTML = `<button class="btn" data-act="close-per">Cancel</button><button class="btn" data-act="per-one">Just this play</button><button class="btn primary" data-act="per-rest">This play and all later plays</button>`;
+  } else {
+    $("perText").innerHTML = `Play at ${fmtT(p.t)}${v ? " on " + esc(v.label) : ""}. Move just this play, or this play and the ${later} later play${later === 1 ? "" : "s"} on the same video. To sort a whole video into clips, start at the first play of Clip 2 and choose the second button, then repeat for Clip 3 and so on.`;
+    $("perSel").hidden = false;
+    $("perBtns").innerHTML = `<button class="btn" data-act="close-per">Cancel</button><button class="btn" data-act="per-one">Just this play</button><button class="btn primary" data-act="per-rest">This play and all later plays</button>`;
+  }
+  $("perModal").hidden = false;
+}
+function applyPerEdit(rest) {
+  const s = cur(); const p = s && s.plays.find(x => x.id === perEditId); $("perModal").hidden = true; if (!p) return;
+  const k0 = $("perSel").value; let n = 0;
+  if (k0.startsWith("vid:")) {
+    const nv = s.videos.find(x => x.id === k0.slice(4)); if (!nv) return; const per = LABEL_PERIOD[nv.label]; const ov = p.vid, ot = p.t;
+    for (const x of s.plays) if (x === p || (rest && x.vid === ov && x.t > ot)) { if (x.vid !== nv.id) n++; x.vid = nv.id; if (per) x.period = per }
+    save(); renderAll(); toast(`${n} play${n === 1 ? "" : "s"} moved to the ${nv.label} video.`); return;
+  }
+  const k = k0;
+  for (const x of s.plays) if (x === p || (rest && x.vid === p.vid && x.t > p.t)) { if (x.period !== k) n++; x.period = k }
+  if (/^C\d/.test(k)) s.pset = "C"; else if (PERIODS.includes(k)) s.pset = "Q";
+  s.period = k; save(); renderAll(); toast(`${n} play${n === 1 ? "" : "s"} moved to ${PLAB[k]}.`);
+}
+function unlockVideo() {
+  const s = cur(); const p = s && s.plays.find(x => x.id === perEditId); if (!p) return;
+  const v = (s.videos || []).find(x => x.id === p.vid); if (v) v.label = "Full game";
+  save(); renderAll(); showVideo(currentVideo()); openPerEdit(perEditId); toast("Video unlocked. Its plays keep their current period until you move them.");
+}
+function pset(s) { return s.pset || ((s.plays || []).some(p => /^C\d/.test(p.period || "")) || /^C\d/.test(s.period || "") ? "C" : "Q") }
 function curPeriod() { const s = cur(); const v = currentVideo(); if (v && LABEL_PERIOD[v.label]) return LABEL_PERIOD[v.label]; return (s && s.period) || "Q1" }
 function handleCall(text, t0, source) {
   const s = cur(); if (!s) { toast("Create a session first."); return }
@@ -1108,7 +1155,7 @@ function handleCall(text, t0, source) {
     else if (c.cmd === "play") play();
     else if (c.cmd === "pause") pause();
     else if (c.cmd === "seek") seekTo(now() + c.d);
-    else if (c.cmd === "period") { s.period = c.p; save(); renderCall(); toast("Period: " + (PLAB[c.p] || c.p)) }
+    else if (c.cmd === "period") { s.period = c.p; if (/^C\d/.test(c.p)) s.pset = "C"; else if (/^(Q\d|OT)$/.test(c.p)) s.pset = "Q"; save(); renderCall(); toast("Period: " + (PLAB[c.p] || c.p)) }
     return;
   }
   let plays = CallParser.parseCall(text, ctx());
@@ -1192,7 +1239,7 @@ function renderPBP() {
     const unresolved = p.items.some(i => !i.p);
     if (editing === p.id) return `<div class="play"><div class="tm"><span class="tlink" style="text-decoration:none">${fmtT(p.t)}</span></div><div class="bd"><input id="editIn" value="${esc(p.text)}" style="width:100%"><span class="small">Enter saves · Esc cancels · a new time in the text replaces ${fmtT(p.t)}</span></div><div class="acts"><button class="ib" data-act="edit-save" data-id="${p.id}">Save</button></div></div>`;
     return `<div class="play ${p.warns.length ? "warned" : ""}">
-      <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}<span class="small">${esc(PLAB[p.period] || p.period || "")}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
+      <div class="tm">${yl ? `<a class="tlink" href="${esc(yl)}" target="_blank" rel="noopener" data-act="replay" title="Replay this play in a new window">${fmtT(p.t)}</a>` : `<button class="tlink" data-act="jump" data-id="${p.id}" ${canSeek ? "" : "disabled"} title="${canSeek ? "Replay this play" : "No video for this play"}">${fmtT(p.t)}</button>`}${viewOnly() ? `<span class="small">${esc(PLAB[p.period] || p.period || "")}` : `<button class="small perbtn" data-act="per-edit" data-id="${p.id}" title="Change this play's period">${esc(PLAB[p.period] || p.period || "–")}</button><span class="small">`}${vl && !LABEL_PERIOD[vl] ? " · " + esc(vl) : ""}</span></div>
       <div class="bd"><div class="row" style="gap:5px">${sqOfPlay(p) ? `<span class="sw" style="background:${sqColor(sqOfPlay(p))}" title="${esc(sqOfPlay(p))}"></span>` : ""}${p.items.map((i, ix) => /^[23][MX]$/.test(i.k) && !viewOnly() ? `<button class="tagbtn" data-act="tier" data-id="${p.id}" data-i="${ix}" title="Click to change the shot grade">${itemTag(i)}</button>` : itemTag(i)).join("")}</div>
         ${p.warns.length ? `<div class="warn">${esc(p.warns.join(" · "))}</div>` : ""}
         ${(() => { const s0 = cur(); if (!s0 || s0.type !== "Scrimmage" || viewOnly() || p.squad) return ""; const need = [...new Set(p.items.map(i => i.p).filter(n => n && !(s0.squadOf || {})[n]))]; return need.map(n => `<div class="row" style="gap:4px"><span class="warn" style="font-size:12px">${esc(short(n))} has no squad:</span>${S.squads.map(q => `<button class="chip" style="min-height:26px;padding:2px 8px;font-size:12px" data-act="set-squad" data-p="${esc(n)}" data-q="${esc(q)}"><span class="sw" style="background:${sqColor(q)}"></span> ${esc(q)}</button>`).join("")}</div>`).join("") })()}
@@ -1533,7 +1580,12 @@ function renderCall() {
     (V.localUrl ? `<button class="chip" data-act="vid" data-id="local" aria-pressed="${s.curVid === "local"}">File: ${esc(V.localName)}</button>` : "") +
     (!vids.length && !s.shared ? `<span class="small">No YouTube link yet. <button class="btn ghost" data-act="edit-session" data-id="${s.id}" style="min-height:28px">Add one</button></span>` : "");
   const v = currentVideo(); const lockP = v && LABEL_PERIOD[v.label];
-  $("perChips").innerHTML = (lockP && lockP.startsWith("H") ? ["H1","H2"] : lockP && lockP.startsWith("C") ? CLIPS : PERIODS).map(p => `<button class="chip" data-act="period" data-p="${p}" aria-pressed="${curPeriod() === p}" ${lockP && lockP !== p ? "disabled style='opacity:.4'" : ""}>${PLAB[p] || p}</button>`).join("");
+  const sc = s ? pset(s) : "Q";
+  const plist = lockP ? (lockP.startsWith("H") ? ["H1","H2"] : lockP.startsWith("C") ? CLIPS : PERIODS) : (sc === "C" ? CLIPS : PERIODS);
+  $("perChips").innerHTML = (lockP ? "" : `<span class="seg pset"><button data-act="pset" data-v="Q" aria-pressed="${sc === "Q"}" title="Quarters and overtime">Quarters</button><button data-act="pset" data-v="C" aria-pressed="${sc === "C"}" title="Clips 1 to 6 within this video">Clips</button></span>`) +
+    plist.map(p => { if (!lockP) return `<button class="chip" data-act="period" data-p="${p}" aria-pressed="${curPeriod() === p}">${PLAB[p] || p}</button>`;
+      const pv = (s.videos || []).find(x => LABEL_PERIOD[x.label] === p);
+      return pv ? `<button class="chip" data-act="vid" data-id="${pv.id}" aria-pressed="${s.curVid === pv.id}" title="Switch to the ${esc(pv.label)} video">${PLAB[p] || p}</button>` : `<button class="chip" disabled style="opacity:.4" title="No video is labelled ${PLAB[p] || p} yet. Add one under Edit videos & squads.">${PLAB[p] || p}</button>` }).join("");
   renderShareBar();
   renderPBP(); renderTally();
 }
@@ -1664,13 +1716,13 @@ function sample() {
 
 /* ===================== SHARING ===================== */
 function packSession(x) {
-  return { name: x.name, date: x.date, type: x.type, opponent: x.opponent || "", period: x.period || "Q1",
+  return { name: x.name, date: x.date, type: x.type, opponent: x.opponent || "", period: x.period || "Q1", pset: x.pset || undefined,
     videos: (x.videos || []).map(v => ({ id: v.id, label: v.label, url: v.url })), squadOf: x.squadOf || {},
     plays: x.plays.slice().sort((a, b) => a.ts - b.ts).map(p => [p.t, p.period || "", p.vid || "", p.squad || "", p.text || "", p.items.map(i => { const o = { k: i.k }; for (const f of ["p", "tier", "stype", "toType", "ball", "detail"]) if (i[f]) o[f] = i[f]; return o })]) };
 }
 function unpackSession(o, extra) {
   const base = Date.now();
-  return Object.assign({ id: uid("s"), name: String(o.name || "Shared session"), date: String(o.date || ""), type: o.type === "Scrimmage" ? "Scrimmage" : "Game", opponent: String(o.opponent || ""), period: o.period || "Q1",
+  return Object.assign({ id: uid("s"), name: String(o.name || "Shared session"), date: String(o.date || ""), type: o.type === "Scrimmage" ? "Scrimmage" : "Game", opponent: String(o.opponent || ""), period: o.period || "Q1", pset: o.pset === "C" ? "C" : o.pset === "Q" ? "Q" : undefined,
     videos: Array.isArray(o.videos) ? o.videos.filter(v => v && ytId(v.url)).map(v => ({ id: String(v.id || uid("v")), label: VLABELS.includes(v.label) ? v.label : "Segment", url: String(v.url) })) : [],
     squadOf: (o.squadOf && typeof o.squadOf === "object") ? o.squadOf : {},
     plays: (Array.isArray(o.plays) ? o.plays : []).map((a, i) => ({ id: uid("p"), t: +a[0] || 0, period: String(a[1] || ""), vid: a[2] || null, squad: a[3] || null, text: String(a[4] || ""),
@@ -1876,6 +1928,12 @@ document.addEventListener("click", e => {
     case "toggle": isPlaying() ? pause() : play(); break;
     case "seek": seekTo(now() + (el.dataset.d === "-step" ? -S.step : el.dataset.d === "step" ? S.step : +el.dataset.d)); break;
     case "period": if (s) { s.period = el.dataset.p; save(); renderCall() } break;
+    case "pset": if (s) { s.pset = el.dataset.v; const L = s.pset === "C" ? CLIPS : PERIODS; if (!L.includes(s.period)) s.period = L[0]; save(); renderCall(); toast(s.pset === "C" ? "Periods are now Clip 1 to Clip 6." : "Periods are now quarters and OT.") } break;
+    case "per-edit": openPerEdit(el.dataset.id); break;
+    case "per-one": applyPerEdit(false); break;
+    case "per-rest": applyPerEdit(true); break;
+    case "per-unlock": unlockVideo(); break;
+    case "close-per": $("perModal").hidden = true; break;
     case "vid": if (s) { s.curVid = el.dataset.id; save(); renderCall(); showVideo(el.dataset.id === "local" ? { id: "local" } : currentVideo()) } break;
     case "pick-file": $("fileIn").click(); break;
     case "jump": { const p = s.plays.find(x => x.id === el.dataset.id); if (p) jump(p); break }
