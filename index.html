@@ -285,7 +285,7 @@ th.grp{background:var(--raise);color:var(--ink)}
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="card">
         <h3 style="margin:0;font:700 19px var(--display);letter-spacing:.05em;text-transform:uppercase">HVP points</h3>
-        <p class="note" style="margin:0">Same values as the Scoring Key in the workbook. Steals, blocks and offensive rebounds earn their points automatically.</p>
+        <p class="note" style="margin:0">These values are used on screen and written to the Scoring Key in every Book. A change saves as soon as you leave the box. Steals, blocks and offensive rebounds earn their points automatically.</p>
         <div class="form" id="weightsF"></div>
       </div>
       <div class="card">
@@ -362,7 +362,7 @@ th.grp{background:var(--raise);color:var(--ink)}
       <table><tbody>
         <tr><td>Make</td><td>make, made, good, bucket, score, hits, drains, cash, splash, nails, finish, and-one</td></tr>
         <tr><td>Miss</td><td>miss, no good, brick, rims out, short, long, airball, blocked</td></tr>
-        <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup, lay, lay in, reverse, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
+        <tr><td><span class="tier t-Gold"></span> Gold</td><td>layup (also heard as “layout”), lay, lay in, reverse, dunk, drive, transition, fast break, post, hook, putback, tip-in</td></tr>
         <tr><td><span class="tier t-Silver"></span> Silver</td><td>catch and shoot, spot up</td></tr>
         <tr><td><span class="tier t-Bronze"></span> Bronze</td><td>mid-range, jumper, pull-up, floater, runner, pull-up three, step-back three</td></tr>
         <tr><td><span class="tier t-Red"></span> Red</td><td>say “red shot”, “bad shot” or “shot we didn’t want” to downgrade any shot. To change a grade afterwards, click the shot in the play-by-play: each click moves it Gold → Silver → Bronze → Red → no grade</td></tr>
@@ -418,6 +418,11 @@ th.grp{background:var(--raise);color:var(--ink)}
   <p class="note" style="margin:0" id="mergeText"></p>
   <select id="mergeTarget"></select>
   <div class="row" style="justify-content:flex-end"><button class="btn" data-act="merge-separate">Keep separate</button><button class="btn primary" data-act="merge-add">Add to this session</button></div>
+</div></div>
+<div class="modal" id="wModal" hidden><div class="box" role="dialog" aria-labelledby="wTitle">
+  <h3 id="wTitle">This file has different HVP values</h3>
+  <p class="note" style="margin:0" id="wText"></p>
+  <div class="row" style="justify-content:flex-end"><button class="btn" data-act="w-keep">Keep my values</button><button class="btn primary" data-act="w-use">Use the file's values</button></div>
 </div></div>
 <div class="modal" id="perModal" hidden><div class="box" role="dialog" aria-labelledby="perTitle">
   <h3 id="perTitle">Change period</h3>
@@ -479,6 +484,8 @@ th.grp{background:var(--raise);color:var(--ink)}
     out2 = out2.replace(/(?<= )paint (?:touched|touching|touchin|such|dutch|tuck|touchy|tough)(?= )/g, "paint touch");
     // "red shot" is often heard as "read shot", "Fred shot", "bread shot"…; any of those next to "shot" means the Red grade
     out2 = out2.replace(/(?<= )(?:read|reed|reid|fred|bread|rad|wrecked|rid|rod|ret|wed|rhett|redd|ready|reds)(?= shots? )/g, "red");
+    // "layout" / "lay out" is never a basketball call here: it is always the recognizer mishearing "layup"
+    out2 = out2.replace(/(?<= )(?:lay ?outs?|lay-?outs?|layouts|lay offs?|layoffs?|lay op|layop|lay oop|lay ups|layups)(?= )/g, "layup");
     out2 = out2.replace(/(?<= )(?:rightread|writeread|riteread|rideread|rider|ryder|writer|rr|double r|r and r)(?= )/g, "right read");
     return out2;
   }
@@ -914,6 +921,16 @@ function load() {
 }
 let saveT = null;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, S, { sessions: S.sessions.filter(x => !x.shared), cur: (cur() && cur().shared) ? (S.prevCur || S.cur) : S.cur, prevCur: undefined }))) } catch (e) { toast("Couldn't save in this browser.") } }, 120) }
+// Another tab (or window) of the Film Caller saved. Reload from storage so this tab never writes stale
+// HVP values, roster or plays back over the newer ones.
+window.addEventListener("storage", e => {
+  if (e.key !== KEY || !e.newValue) return;
+  clearTimeout(saveT);
+  const shared = S.sessions.filter(x => x.shared), c = S.cur, pc = S.prevCur;
+  S = load(); S.sessions.push(...shared);
+  if (S.sessions.some(x => x.id === c)) S.cur = c; if (pc) S.prevCur = pc;
+  reindex(); renderAll();
+});
 const cur = () => S.sessions.find(x => x.id === S.cur) || null;
 const W = () => { const s = cur(); return (s && s.shared && s.weights) || S.weights };
 const viewOnly = () => { const s = cur(); return !!(s && s.shared) };
@@ -1684,6 +1701,13 @@ function renderSetup() {
   $("ghRepo").value = ghCfg().repo; $("ghTok").placeholder = ghCfg().token ? "Key saved (paste a new one to replace it)" : "github_pat_…";
   $("optLead").value = S.leadIn; $("optStep").value = S.step; $("keyBack").value = keyName(S.keyBack); $("keyBack").dataset.k = S.keyBack; $("keyFwd").value = keyName(S.keyFwd); $("keyFwd").dataset.k = S.keyFwd; $("optLang").value = S.lang; $("optSquads").value = S.squads.join(", ");
 }
+function saveWeightField(el) {
+  const k = el.id.replace(/^w_/, ""); const v = parseFloat(el.value);
+  if (!(k in W0) || isNaN(v)) return;
+  S.weights[k] = v; save();
+  $("setupMsg").textContent = "HVP values saved."; setTimeout(() => $("setupMsg").textContent = "", 2000);
+}
+$("weightsF").addEventListener("change", e => { if (e.target && e.target.id && e.target.id.startsWith("w_")) saveWeightField(e.target) });
 function pullRoster() {
   document.querySelectorAll(".rName").forEach(el => S.roster[+el.dataset.i].name = el.value.trim());
   document.querySelectorAll(".rNum").forEach(el => S.roster[+el.dataset.i].num = el.value.trim());
@@ -1835,7 +1859,7 @@ function addImportedSeparate(o, w) { pendingImport = { forced: true }; addImport
 function mergeImport(targetId) {
   const pi = pendingImport; pendingImport = null; $("mergeModal").hidden = true; if (!pi) return;
   const t = S.sessions.find(q => q.id === targetId); if (!t) return;
-  const x = unpackSession(pi.o);
+  offerWeights(pi.w); const x = unpackSession(pi.o);
   // keep incoming videos (new ids) and plays; plays without a video stay unlinked until a video is added
   const idMap = {};
   for (const v of x.videos) { const nv = Object.assign({}, v, { id: uid("v") }); idMap[v.id] = nv.id; t.videos = (t.videos || []).concat(nv) }
@@ -1844,6 +1868,16 @@ function mergeImport(targetId) {
   if (x.period) t.period = x.period;
   S.cur = t.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo());
   toast(`Added ${x.plays.length} plays to ${t.name}.${x.plays.some(p => !p.vid) ? " Add their YouTube link with Edit videos & squads." : ""}`);
+}
+let pendingW = null;
+function offerWeights(w) {
+  if (!w) return; const fw = Object.assign({}, W0, w);
+  const diff = WLAB.filter(([k]) => Math.abs((+fw[k] || 0) - (+S.weights[k] || 0)) > 0.0005);
+  if (!diff.length) return;
+  pendingW = fw;
+  $("wText").innerHTML = diff.map(([k, l]) => `${esc(l)}: file <b>${k === "factor" ? (+fw[k]).toFixed(4) : fw[k]}</b>, yours ${k === "factor" ? (+S.weights[k]).toFixed(4) : S.weights[k]}`).join("<br>") +
+    "<br><br>The values you choose are used on screen, in share links, session files and the Book.";
+  $("wModal").hidden = false;
 }
 function addImported(o, w) {
   const same = S.sessions.filter(q => !q.shared && q.name.trim().toLowerCase() === String(o.name || "").trim().toLowerCase());
@@ -1858,8 +1892,7 @@ function addImported(o, w) {
   const x = unpackSession(o);
   if (S.sessions.some(q => !q.shared && q.name === x.name && q.date === x.date)) x.name += " (copy)";
   S.sessions.push(x); S.cur = x.id; save(); view = "call"; sqFilter = "All"; renderAll(); showVideo(currentVideo());
-  if (w && JSON.stringify(Object.assign({}, W0, w)) !== JSON.stringify(S.weights)) toast("Added. Note: the sender's HVP point values differ from yours; your values are used.");
-  else toast("Session added to your sessions.");
+  toast("Session added to your sessions."); offerWeights(w);
 }
 async function loadSharedFromHash() {
   const h = location.hash;
@@ -1949,6 +1982,8 @@ document.addEventListener("click", e => {
     case "close-clips": $("clipModal").hidden = true; break;
     case "fullscreen": { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen() } catch (e) { toast("Full screen isn't available in this browser.") } break }
     case "merge-add": mergeImport($("mergeTarget").value); break;
+    case "w-use": if (pendingW) { S.weights = Object.assign({}, pendingW); save(); renderAll(); toast("Now using the file's HVP values.") } pendingW = null; $("wModal").hidden = true; break;
+    case "w-keep": pendingW = null; $("wModal").hidden = true; break;
     case "merge-separate": { const pi = pendingImport; $("mergeModal").hidden = true; if (pi) addImportedSeparate(pi.o, pi.w); break }
     case "copy-summary": { const b2 = $("sumBox"); if (b2) copy([...b2.querySelectorAll("p")].map(p2 => p2.textContent).join("\n\n")); break }
     case "copy-short": if ($("shortLink").value) copy($("shortLink").value); break;
